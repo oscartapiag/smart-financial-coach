@@ -1,23 +1,47 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-.venv/
-.env
-backend/data/*.csv
-
-# Node / React
-node_modules/
-dist/
-build/
-*.log
-
-# IDEs / Editors
-.vscode/
-.idea/
-*.swp
-
 # OS
 .DS_Store
 Thumbs.db
 
+# Env & secrets
+.env
+.env.*.local
+*.env.local
+*.secret
+*.cert
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+.cache/
+.eslintcache
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pytest_cache/
+.coverage*
+htmlcov/
+.mypy_cache/
+.pytype/
+.venv/
+venv/
+.envrc
+
+# Tooling
+.idea/
+.vscode/
+*.swp
+
+# App uploads / runtime
+uploads/
+tmp/

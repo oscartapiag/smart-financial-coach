@@ -38,6 +38,32 @@ def test_upload():
             print("❌ Could not connect to server. Make sure it's running on http://localhost:8000")
             return None
 
+def test_upload_2():
+    """Test the CSV upload endpoint"""
+    url = "http://localhost:8000/upload-transactions"
+    
+    # Test with sample file
+    with open("sample_transaction_2.csv", "rb") as f:
+        files = {"file": ("sample_transaction_2.csv", f, "text/csv")}
+        
+        try:
+            response = requests.post(url, files=files)
+            
+            if response.status_code == 200:
+                data = response.json()
+                print("✅ Upload successful!")
+                print(f"📁 File ID: {data['file_id']}")
+                print(f"📊 Total rows: {data['rows']}")
+                print(f"📋 Total columns: {data['columns']}")
+                return data['file_id']
+            else:
+                print(f"❌ Upload failed: {response.status_code}")
+                print(response.text)
+                return None
+        except requests.exceptions.ConnectionError:
+            print("❌ Could not connect to server. Make sure it's running on http://localhost:8000")
+            return None
+
 def test_duplicate_upload():
     """Test uploading the same file twice to verify duplicate detection"""
     print("\n🔄 Testing duplicate detection...")
@@ -101,6 +127,7 @@ if __name__ == "__main__":
     
     # Test upload
     file_id = test_upload()
+    file_id_2 = test_upload_2()
     
     # Test duplicate detection
     test_duplicate_upload()

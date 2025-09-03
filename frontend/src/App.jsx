@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import AnalysisPage from './AnalysisPage'
 import './App.css'
 
 function App() {
@@ -8,6 +9,7 @@ function App() {
   const [uploadMessage, setUploadMessage] = useState('')
   const [uploadedFileId, setUploadedFileId] = useState(null)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [showAnalysis, setShowAnalysis] = useState(false)
   const fileInputRef = useRef(null)
 
   // Trigger fade-in animation on component mount
@@ -42,6 +44,11 @@ function App() {
         } else {
           setUploadMessage(`Successfully uploaded ${data.filename} with ${data.rows} transactions`)
         }
+        
+        // Navigate to analysis page after 2 seconds
+        setTimeout(() => {
+          setShowAnalysis(true)
+        }, 2000)
       } else {
         setUploadStatus('error')
         setUploadMessage(data.detail || 'Upload failed')
@@ -98,6 +105,18 @@ function App() {
     }
   }
 
+  const handleBackToUpload = () => {
+    setShowAnalysis(false)
+    setUploadStatus(null)
+    setUploadMessage('')
+    setUploadedFileId(null)
+  }
+
+  // Show analysis page if file was uploaded successfully
+  if (showAnalysis && uploadedFileId) {
+    return <AnalysisPage fileId={uploadedFileId} onBack={handleBackToUpload} />
+  }
+
   return (
     <div className="app">
       <div 
@@ -141,6 +160,12 @@ function App() {
             {uploadStatus === 'success' && uploadedFileId && (
               <div className="file-id">
                 File ID: {uploadedFileId}
+                <button 
+                  className="view-analysis-button"
+                  onClick={() => setShowAnalysis(true)}
+                >
+                  View Analysis →
+                </button>
               </div>
             )}
           </div>

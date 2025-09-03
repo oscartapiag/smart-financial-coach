@@ -9,12 +9,17 @@ import uuid
 import hashlib
 import json
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from pathlib import Path
 import numpy as np
 import pandas as pd
 from collections.abc import Mapping, Sequence
+import math
+import sys
 
+# Add ML_models to path
+sys.path.append(str(Path(__file__).parent / "ML_models"))
+from categories_knn import knn_predict, load_model
 
 
 # Configure logging
@@ -24,9 +29,15 @@ logger = logging.getLogger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title="Smart Financial Coach API",
-    description="API for processing financial transaction CSV files",
+    description="API for processing financial transaction CSV files with ML-powered categorization",
     version="1.0.0"
 )
+
+# Initialize ML model on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize ML model when the application starts"""
+    initialize_ml_model()
 
 # Add CORS middleware
 app.add_middleware(
@@ -43,6 +54,10 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Create hash registry file to track file hashes
 HASH_REGISTRY_FILE = UPLOAD_DIR / "file_hashes.json"
+
+# ML Model initialization
+ML_MODEL_LOADED = False
+ML_MODEL_PATH = Path(__file__).parent / "ML_models" / "knn_model.joblib"
 
 # Expected financial transaction columns (flexible - will auto-detect)
 EXPECTED_FINANCIAL_COLUMNS = [
@@ -89,18 +104,139 @@ def find_duplicate_file(file_hash: str) -> Optional[Dict[str, Any]]:
     registry = load_hash_registry()
     return registry.get(file_hash)
 
+def initialize_ml_model():
+    """Initialize the ML model for category prediction"""
+    global ML_MODEL_LOADED
+    try:
+        if ML_MODEL_PATH.exists():
+            load_model()
+            ML_MODEL_LOADED = True
+            logger.info("✅ ML model loaded successfully")
+        else:
+            logger.warning(f"⚠️ ML model not found at {ML_MODEL_PATH}")
+            ML_MODEL_LOADED = False
+    except Exception as e:
+        logger.error(f"❌ Failed to load ML model: {e}")
+        ML_MODEL_LOADED = False
+
+def predict_transaction_category(description: str, k: int = 5, threshold: float = 0.35) -> Tuple[str, float]:
+    """
+    Predict category for a transaction description using k-NN model
+    
+    Args:
+        description: Transaction description text
+        k: Number of neighbors to consider
+        threshold: Minimum confidence threshold
+        
+    Returns:
+        Tuple of (predicted_category, confidence_score)
+    """
+    if not ML_MODEL_LOADED:
+        return "Uncategorized", 0.0
+    
+    try:
+        return knn_predict(description, k=k, threshold=threshold)
+    except Exception as e:
+        logger.error(f"Error predicting category for '{description}': {e}")
+        return "Uncategorized", 0.0
+
+def categorize_transactions(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add ML-predicted categories to transaction dataframe
+    Separates income and spending transactions before ML categorization
+    
+    Args:
+        df: DataFrame with transaction data
+        
+    Returns:
+        DataFrame with added 'ml_category' and 'ml_confidence' columns
+    """
+    if not ML_MODEL_LOADED:
+        logger.warning("ML model not loaded, skipping categorization")
+        df['ml_category'] = 'Uncategorized'
+        df['ml_confidence'] = 0.0
+        return df
+    
+    # Find amount column
+    amount_col = None
+    for col in df.columns:
+        if any(keyword in col.lower() for keyword in ['amount', 'debit', 'credit', 'value']):
+            amount_col = col
+            break
+    
+    # Find description column
+    description_col = None
+    for col in df.columns:
+        if any(keyword in col.lower() for keyword in ['description', 'merchant', 'memo', 'details']):
+            description_col = col
+            break
+    
+    if description_col is None:
+        logger.warning("No description column found for categorization")
+        df['ml_category'] = 'Uncategorized'
+        df['ml_confidence'] = 0.0
+        return df
+    
+    # Initialize category and confidence columns
+    df['ml_category'] = 'Uncategorized'
+    df['ml_confidence'] = 0.0
+    
+    # Convert amount column to numeric for proper filtering
+    if amount_col:
+        df[amount_col] = pd.to_numeric(df[amount_col].astype(str).str.replace('$', '').str.replace(',', ''), errors='coerce')
+        
+        # Separate income (positive amounts) and spending (negative amounts)
+        income_mask = df[amount_col] > 0
+        spending_mask = df[amount_col] <= 0
+        
+        # Automatically categorize income transactions
+        df.loc[income_mask, 'ml_category'] = 'Income'
+        df.loc[income_mask, 'ml_confidence'] = 1.0  # High confidence for income
+        
+        # Use ML model only for spending transactions
+        spending_transactions = df[spending_mask]
+        if len(spending_transactions) > 0:
+            spending_categories = []
+            spending_confidences = []
+            
+            for desc in spending_transactions[description_col].fillna(''):
+                category, confidence = predict_transaction_category(str(desc))
+                spending_categories.append(category)
+                spending_confidences.append(confidence)
+            
+            # Update spending transactions with ML predictions
+            df.loc[spending_mask, 'ml_category'] = spending_categories
+            df.loc[spending_mask, 'ml_confidence'] = spending_confidences
+    else:
+        # If no amount column, use ML for all transactions (fallback)
+        logger.warning("No amount column found, using ML for all transactions")
+        categories = []
+        confidences = []
+        
+        for desc in df[description_col].fillna(''):
+            category, confidence = predict_transaction_category(str(desc))
+            categories.append(category)
+            confidences.append(confidence)
+        
+        df['ml_category'] = categories
+        df['ml_confidence'] = confidences
+    
+    return df
+
+
 def sanitize(obj):
-    """Recursively convert numpy/pandas objects to JSON-safe Python types."""
+    """Recursively convert numpy/pandas objects to JSON-safe Python types, replacing NaN/Inf with None."""
     # Scalars
     if isinstance(obj, (np.integer,)):
         return int(obj)
-    if isinstance(obj, (np.floating,)):
-        return float(obj)
-    if isinstance(obj, (np.bool_,)):
+    if isinstance(obj, (np.floating, float)):
+        x = float(obj)
+        return x if math.isfinite(x) else None  # <- key line
+    if isinstance(obj, (np.bool_, bool)):
         return bool(obj)
-    if isinstance(obj, (pd.Timestamp,)):
+    if isinstance(obj, pd.Timestamp):
         return obj.isoformat()
-    if isinstance(obj, (pd.Period,)):
+    if isinstance(obj, pd.Period):
         return str(obj)
 
     # Pandas containers
@@ -119,13 +255,11 @@ def sanitize(obj):
     if isinstance(obj, (list, tuple, set)):
         return [sanitize(v) for v in obj]
 
-    # Primitives or None
-    if obj is None or isinstance(obj, (str, int, float, bool)):
+    # Primitives / None
+    if obj is None or isinstance(obj, (str, int)):
         return obj
 
-    # Fallback
     return str(obj)
-
 def get_file_info(file_id: str) -> Optional[Dict[str, Any]]:
     """Get basic file information from the stored CSV file"""
     csv_file = UPLOAD_DIR / f"{file_id}.csv"
@@ -143,6 +277,9 @@ def get_file_info(file_id: str) -> Optional[Dict[str, Any]]:
 
 def analyze_financial_transactions(df: pd.DataFrame) -> Dict[str, Any]:
     """Analyze financial transaction data specifically"""
+    # Add ML-predicted categories
+    df_with_ml = categorize_transactions(df.copy())
+    
     analysis = {
         "transaction_summary": {},
         "spending_analysis": {},
@@ -186,6 +323,21 @@ def analyze_financial_transactions(df: pd.DataFrame) -> Dict[str, Any]:
             "largest_transaction": float(df[amount_col].max()) if len(df) > 0 else 0,
             "smallest_transaction": float(df[amount_col].min()) if len(df) > 0 else 0
         }
+        
+        # ML Category-based spending analysis
+        if 'ml_category' in df_with_ml.columns:
+            # Calculate spending by ML category
+            category_spending = {}
+            for category in df_with_ml['ml_category'].unique():
+                category_transactions = df_with_ml[df_with_ml['ml_category'] == category]
+                category_amounts = category_transactions[amount_col]
+                category_spending[category] = {
+                    "total_amount": float(category_amounts.sum()),
+                    "transaction_count": len(category_transactions),
+                    "average_amount": float(category_amounts.mean()) if len(category_transactions) > 0 else 0
+                }
+            
+            analysis["spending_analysis"]["category_breakdown"] = category_spending
     
     # Try to identify date column
     date_columns = []
@@ -211,22 +363,123 @@ def analyze_financial_transactions(df: pd.DataFrame) -> Dict[str, Any]:
                     "transactions_by_month": valid_dates.dt.to_period('M').astype(str).value_counts().to_dict(),
                     "transactions_by_day_of_week": valid_dates.dt.day_name().astype(str).value_counts().to_dict()
                 }
+                
+                # Time series analysis for income and spending
+                if amount_col and 'ml_category' in df_with_ml.columns:
+                    # Create time series data
+                    df_with_ml[date_col] = pd.to_datetime(df_with_ml[date_col], errors='coerce')
+                    df_time_series = df_with_ml.dropna(subset=[date_col, amount_col]).copy()
+                    
+                    if len(df_time_series) > 0:
+                        # Convert amount to numeric
+                        df_time_series[amount_col] = pd.to_numeric(
+                            df_time_series[amount_col].astype(str).str.replace('$', '').str.replace(',', ''), 
+                            errors='coerce'
+                        )
+                        
+                        # Separate income and spending
+                        income_data = df_time_series[df_time_series['ml_category'] == 'Income']
+                        spending_data = df_time_series[df_time_series['ml_category'] != 'Income']
+                        
+                        # Create time series by different periods
+                        time_series = {}
+                        
+                        # Daily aggregation
+                        if len(df_time_series) > 0:
+                            daily_income = income_data.groupby(income_data[date_col].dt.date)[amount_col].sum()
+                            daily_spending = spending_data.groupby(spending_data[date_col].dt.date)[amount_col].sum()
+                            
+                            time_series["daily"] = {
+                                "income": {str(date): float(amount) for date, amount in daily_income.items()},
+                                "spending": {str(date): float(amount) for date, amount in daily_spending.items()}
+                            }
+                        
+                        # Weekly aggregation
+                        if len(df_time_series) > 7:
+                            weekly_income = income_data.groupby(income_data[date_col].dt.to_period('W'))[amount_col].sum()
+                            weekly_spending = spending_data.groupby(spending_data[date_col].dt.to_period('W'))[amount_col].sum()
+                            
+                            time_series["weekly"] = {
+                                "income": {str(week): float(amount) for week, amount in weekly_income.items()},
+                                "spending": {str(week): float(amount) for week, amount in weekly_spending.items()}
+                            }
+                        
+                        # Monthly aggregation
+                        if len(df_time_series) > 30:
+                            monthly_income = income_data.groupby(income_data[date_col].dt.to_period('M'))[amount_col].sum()
+                            monthly_spending = spending_data.groupby(spending_data[date_col].dt.to_period('M'))[amount_col].sum()
+                            
+                            time_series["monthly"] = {
+                                "income": {str(month): float(amount) for month, amount in monthly_income.items()},
+                                "spending": {str(month): float(amount) for month, amount in monthly_spending.items()}
+                            }
+                        
+                        # Add time series to analysis
+                        analysis["time_series"] = time_series
+                        
+                        # Calculate trends
+                        if len(time_series) > 0:
+                            # Use the most appropriate time period for trend analysis
+                            trend_data = time_series.get("monthly", time_series.get("weekly", time_series.get("daily", {})))
+                            
+                            if trend_data and "income" in trend_data and "spending" in trend_data:
+                                income_trend = list(trend_data["income"].values())
+                                spending_trend = list(trend_data["spending"].values())
+                                
+                                # Simple trend calculation (slope of linear regression)
+                                if len(income_trend) > 1:
+                                    x = list(range(len(income_trend)))
+                                    income_slope = np.polyfit(x, income_trend, 1)[0] if len(income_trend) > 1 else 0
+                                else:
+                                    income_slope = 0
+                                    
+                                if len(spending_trend) > 1:
+                                    x = list(range(len(spending_trend)))
+                                    spending_slope = np.polyfit(x, spending_trend, 1)[0] if len(spending_trend) > 1 else 0
+                                else:
+                                    spending_slope = 0
+                                
+                                analysis["trends"] = {
+                                    "income_trend": float(income_slope),
+                                    "spending_trend": float(spending_slope),
+                                    "income_trend_direction": "increasing" if income_slope > 0 else "decreasing" if income_slope < 0 else "stable",
+                                    "spending_trend_direction": "increasing" if spending_slope > 0 else "decreasing" if spending_slope < 0 else "stable"
+                                }
         except Exception as e:
             logger.warning(f"Could not parse dates: {e}")
     
-    # Try to identify category column
-    category_columns = []
-    for col in df.columns:
-        if any(keyword in col.lower() for keyword in ['category', 'type', 'description', 'merchant']):
-            category_columns.append(col)
-    
-    if category_columns:
-        category_col = category_columns[0]
-        category_counts = df[category_col].value_counts()
+    # ML Category Analysis (only use ML-predicted categories)
+    if 'ml_category' in df_with_ml.columns:
+        ml_category_counts = df_with_ml['ml_category'].value_counts()
+        ml_confidence_stats = df_with_ml['ml_confidence'].describe()
+        
+        # Separate income and spending categories for better analysis
+        income_transactions = df_with_ml[df_with_ml['ml_category'] == 'Income']
+        spending_transactions = df_with_ml[df_with_ml['ml_category'] != 'Income']
+        
+        spending_category_counts = spending_transactions['ml_category'].value_counts()
+        spending_confidence_stats = spending_transactions['ml_confidence'].describe()
+        
         analysis["category_analysis"] = {
-            "top_categories": category_counts.head(10).to_dict(),
-            "unique_categories": len(category_counts),
-            "category_distribution": (category_counts / len(df) * 100).round(2).to_dict()
+            "note": "Categories: Income auto-detected, Spending predicted by ML model (k-NN)",
+            "income_vs_spending": {
+                "income_transactions": len(income_transactions),
+                "spending_transactions": len(spending_transactions),
+                "income_percentage": float(len(income_transactions) / len(df_with_ml) * 100),
+                "spending_percentage": float(len(spending_transactions) / len(df_with_ml) * 100)
+            },
+            "top_spending_categories": spending_category_counts.head(10).to_dict(),
+            "unique_categories": len(ml_category_counts),
+            "category_distribution": (ml_category_counts / len(df_with_ml) * 100).round(2).to_dict(),
+            "spending_confidence_stats": {
+                "mean_confidence": float(spending_confidence_stats['mean']) if len(spending_transactions) > 0 else 0,
+                "median_confidence": float(spending_confidence_stats['50%']) if len(spending_transactions) > 0 else 0,
+                "min_confidence": float(spending_confidence_stats['min']) if len(spending_transactions) > 0 else 0,
+                "max_confidence": float(spending_confidence_stats['max']) if len(spending_transactions) > 0 else 0,
+                "std_confidence": float(spending_confidence_stats['std']) if len(spending_transactions) > 0 else 0
+            },
+            "uncategorized_count": int((spending_transactions['ml_category'] == 'Uncategorized').sum()),
+            "uncategorized_percentage": float((spending_transactions['ml_category'] == 'Uncategorized').mean() * 100) if len(spending_transactions) > 0 else 0
         }
     
     # Data quality analysis
@@ -272,6 +525,194 @@ async def get_hash_registry():
         "registry": registry,
         "total_hashes": len(registry)
     }
+
+@app.get("/ml/status")
+async def get_ml_status():
+    """Get the status of the ML model"""
+    return {
+        "model_loaded": ML_MODEL_LOADED,
+        "model_path": str(ML_MODEL_PATH),
+        "model_exists": ML_MODEL_PATH.exists()
+    }
+
+@app.post("/ml/predict-category")
+async def predict_single_category(description: str, k: int = 5, threshold: float = 0.35):
+    """Predict spending category for a single transaction description (for spending transactions only)"""
+    if not ML_MODEL_LOADED:
+        raise HTTPException(status_code=503, detail="ML model not loaded")
+    
+    category, confidence = predict_transaction_category(description, k=k, threshold=threshold)
+    
+    return {
+        "description": description,
+        "predicted_category": category,
+        "confidence": confidence,
+        "note": "This prediction is for spending transactions. Income transactions are automatically categorized as 'Income'.",
+        "parameters": {
+            "k": k,
+            "threshold": threshold
+        }
+    }
+
+@app.get("/files/{file_id}/categorized")
+async def get_categorized_transactions(file_id: str):
+    """Get transactions with ML-predicted categories"""
+    csv_file = UPLOAD_DIR / f"{file_id}.csv"
+    if not csv_file.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    try:
+        # Read and parse the CSV file
+        df = pd.read_csv(csv_file)
+        
+        # Add ML categories
+        df_with_ml = categorize_transactions(df.copy())
+        
+        # Convert to records for JSON response
+        transactions = df_with_ml.to_dict('records')
+        
+        return {
+            "file_id": file_id,
+            "total_transactions": len(transactions),
+            "transactions": sanitize(transactions)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error categorizing transactions for file {file_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error categorizing transactions: {str(e)}")
+
+@app.get("/files/{file_id}/time-series")
+async def get_time_series_data(file_id: str, period: str = "30d"):
+    """Get cumulative time series data for income and spending trends"""
+    csv_file = UPLOAD_DIR / f"{file_id}.csv"
+    if not csv_file.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    if period not in ["14d", "30d", "90d", "1y"]:
+        raise HTTPException(status_code=400, detail="Period must be '14d', '30d', '90d', or '1yr'")
+    
+    try:
+        # Read and parse the CSV file
+        df = pd.read_csv(csv_file)
+        
+        # Add ML categories
+        df_with_ml = categorize_transactions(df.copy())
+        
+        # Find amount and date columns
+        amount_col = None
+        date_col = None
+        
+        for col in df.columns:
+            if any(keyword in col.lower() for keyword in ['amount', 'debit', 'credit', 'value']):
+                amount_col = col
+            if any(keyword in col.lower() for keyword in ['date', 'time']):
+                date_col = col
+        
+        if not amount_col or not date_col:
+            raise HTTPException(status_code=400, detail="Could not find amount or date columns")
+        
+        # Process time series data
+        df_with_ml[date_col] = pd.to_datetime(df_with_ml[date_col], errors='coerce')
+        df_time_series = df_with_ml.dropna(subset=[date_col, amount_col]).copy()
+        
+        if len(df_time_series) == 0:
+            raise HTTPException(status_code=400, detail="No valid time series data found")
+        
+        # Convert amount to numeric
+        df_time_series[amount_col] = pd.to_numeric(
+            df_time_series[amount_col].astype(str).str.replace('$', '').str.replace(',', ''), 
+            errors='coerce'
+        )
+        
+        # Filter data based on time period
+        end_date = df_time_series[date_col].max()
+        
+        if period == "14d":
+            start_date = end_date - pd.Timedelta(days=14)
+        elif period == "30d":
+            start_date = end_date - pd.Timedelta(days=30)
+        elif period == "90d":
+            start_date = end_date - pd.Timedelta(days=90)
+        else:  # 1y
+            start_date = end_date - pd.Timedelta(days=365)
+        
+        # Filter data to the specified time period
+        df_filtered = df_time_series[df_time_series[date_col] >= start_date].copy()
+        
+        if len(df_filtered) == 0:
+            raise HTTPException(status_code=400, detail=f"No data found for the specified period: {period}")
+        
+        # Sort by date
+        df_filtered = df_filtered.sort_values(date_col)
+        
+        # Separate income and spending
+        income_data = df_filtered[df_filtered['ml_category'] == 'Income']
+        spending_data = df_filtered[df_filtered['ml_category'] != 'Income']
+        
+        # Create daily aggregation
+        daily_income = income_data.groupby(income_data[date_col].dt.date)[amount_col].sum()
+        daily_spending = spending_data.groupby(spending_data[date_col].dt.date)[amount_col].sum()
+        
+        # Create a complete date range for the period
+        date_range = pd.date_range(start=start_date.date(), end=end_date.date(), freq='D')
+        
+        # Initialize cumulative totals
+        cumulative_income = 0.0
+        cumulative_spending = 0.0
+        
+        # Build cumulative time series
+        income_series = []
+        spending_series = []
+        
+        for date in date_range:
+            date_str = date.strftime('%Y-%m-%d')
+            
+            # Add daily amounts to cumulative totals
+            if date.date() in daily_income.index:
+                cumulative_income += float(daily_income[date.date()])
+            if date.date() in daily_spending.index:
+                cumulative_spending += float(daily_spending[date.date()])
+            
+            income_series.append({
+                "date": date_str,
+                "cumulative_amount": cumulative_income,
+                "daily_amount": float(daily_income.get(date.date(), 0))
+            })
+            
+            spending_series.append({
+                "date": date_str,
+                "cumulative_amount": abs(cumulative_spending),  # Make spending positive for visualization
+                "daily_amount": abs(float(daily_spending.get(date.date(), 0)))
+            })
+        
+        # Calculate summary statistics
+        total_income = float(income_data[amount_col].sum())
+        total_spending = float(spending_data[amount_col].sum())
+        
+        time_series_data = {
+            "period": period,
+            "date_range": {
+                "start_date": start_date.strftime('%Y-%m-%d'),
+                "end_date": end_date.strftime('%Y-%m-%d'),
+                "days_covered": len(date_range)
+            },
+            "income": income_series,
+            "spending": spending_series,
+            "summary": {
+                "total_income": total_income,
+                "total_spending": abs(total_spending),
+                "net_amount": total_income - abs(total_spending),
+                "data_points": len(income_series),
+                "income_transactions": len(income_data),
+                "spending_transactions": len(spending_data)
+            }
+        }
+        
+        return time_series_data
+        
+    except Exception as e:
+        logger.error(f"Error generating time series for file {file_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating time series: {str(e)}")
 
 @app.get("/files/{file_id}")
 async def get_file_details(file_id: str):

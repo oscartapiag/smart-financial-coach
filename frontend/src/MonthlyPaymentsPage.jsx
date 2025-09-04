@@ -2,7 +2,7 @@ import { useState } from 'react'
 import './MonthlyPaymentsPage.css'
 import WealthProjectionsPage from './WealthProjectionsPage'
 
-function MonthlyPaymentsPage({ onBack, netWorthData }) {
+function MonthlyPaymentsPage({ onBack, netWorthData, fileId }) {
   const [contributions, setContributions] = useState({
     contrib_checking: 0.0,
     contrib_hysa: 0.0,
@@ -66,6 +66,7 @@ function MonthlyPaymentsPage({ onBack, netWorthData }) {
       onBack={handleBackFromWealthProjections}
       netWorthData={netWorthData}
       monthlyData={{ contributions, debtPayments }}
+      fileId={fileId}
     />
   }
 

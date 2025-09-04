@@ -1253,6 +1253,261 @@ async def calculate_wealth_projections(wealth_data: dict):
         logger.error(f"Error calculating wealth projections: {e}")
         raise HTTPException(status_code=500, detail=f"Error calculating wealth projections: {str(e)}")
 
+@app.post("/wealth/optimized-projections")
+async def calculate_optimized_wealth_projections(wealth_data: dict):
+    """Calculate wealth projections with spending optimization suggestions"""
+    try:
+        # Extract data from the request
+        assets_data = wealth_data.get("assets", {})
+        liabilities_data = wealth_data.get("liabilities", {})
+        contributions_data = wealth_data.get("contributions", {})
+        debt_payments_data = wealth_data.get("debtPayments", {})
+        file_id = wealth_data.get("file_id")
+        
+        # Get spending analysis from uploaded CSV if file_id provided
+        top_categories = []
+        if file_id:
+            try:
+                # Get spending categories from the uploaded file
+                csv_file = UPLOAD_DIR / f"{file_id}.csv"
+                if csv_file.exists():
+                    df = pd.read_csv(csv_file)
+                    df_with_ml = categorize_transactions(df.copy())
+                    
+                    # Find amount and date columns
+                    amount_col = None
+                    date_col = None
+                    
+                    for col in df.columns:
+                        if any(keyword in col.lower() for keyword in ['amount', 'debit', 'credit', 'value']):
+                            amount_col = col
+                        if any(keyword in col.lower() for keyword in ['date', 'time']):
+                            date_col = col
+                    
+                    if amount_col and date_col:
+                        # Process data for the past 30 days
+                        df_with_ml[date_col] = pd.to_datetime(df_with_ml[date_col], errors='coerce')
+                        df_time_series = df_with_ml.dropna(subset=[date_col, amount_col]).copy()
+                        
+                        if len(df_time_series) > 0:
+                            # Convert amount to numeric
+                            df_time_series[amount_col] = pd.to_numeric(
+                                df_time_series[amount_col].astype(str).str.replace('$', '').str.replace(',', ''), 
+                                errors='coerce'
+                            )
+                            
+                            # Filter data for the past 30 days
+                            end_date = df_time_series[date_col].max()
+                            start_date = end_date - pd.Timedelta(days=29)
+                            df_current = df_time_series[df_time_series[date_col] >= start_date].copy()
+                            
+                            # Get spending categories (exclude income and rent)
+                            spending_data = df_current[df_current['ml_category'] != 'Income'].copy()
+                            spending_data = spending_data[~spending_data['ml_category'].str.contains('rent', case=False, na=False)]
+                            
+                            if len(spending_data) > 0:
+                                # Group by category and sum amounts
+                                category_spending = spending_data.groupby('ml_category')[amount_col].sum().abs().sort_values(ascending=False)
+                                
+                                # Get top 3 categories
+                                top_categories = []
+                                for i, (category, amount) in enumerate(category_spending.head(3).items()):
+                                    top_categories.append({
+                                        "category": category,
+                                        "current_spending": float(amount),
+                                        "suggested_reduction": float(amount * 0.2),
+                                        "new_spending": float(amount * 0.8)
+                                    })
+                                
+                                logger.info(f"Found top spending categories: {[cat['category'] for cat in top_categories]}")
+                            else:
+                                logger.warning("No spending data found for optimization")
+                        else:
+                            logger.warning("No valid time series data found for optimization")
+                    else:
+                        logger.warning("Could not find amount or date columns for optimization")
+                else:
+                    logger.warning(f"File {file_id} not found for spending analysis")
+            except Exception as e:
+                logger.warning(f"Error analyzing spending patterns: {e}")
+        
+        # Create WealthInputs object
+        wealth_inputs = WealthInputs(
+            # Assets
+            real_estate=float(assets_data.get("realEstate", {}).get("value", 0)),
+            checking=float(assets_data.get("checking", {}).get("value", 0)),
+            savings_hysa=float(assets_data.get("savings", {}).get("value", 0)),
+            retirement_invest=float(assets_data.get("retirement", {}).get("value", 0)),
+            cars_value=float(assets_data.get("cars", {}).get("value", 0)),
+            other_assets=float(assets_data.get("otherAssets", {}).get("value", 0)),
+            
+            # Liabilities
+            real_estate_loans=float(liabilities_data.get("realEstateLoans", {}).get("value", 0)),
+            credit_card_debt=float(liabilities_data.get("creditCardDebt", {}).get("value", 0)),
+            personal_loans=float(liabilities_data.get("personalLoans", {}).get("value", 0)),
+            student_loans=float(liabilities_data.get("studentLoans", {}).get("value", 0)),
+            car_loans=float(liabilities_data.get("carLoans", {}).get("value", 0)),
+            other_debt=float(liabilities_data.get("otherDebt", {}).get("value", 0))
+        )
+        
+        # Create Assumptions object
+        assumptions = Assumptions(
+            real_estate_apr=float(assets_data.get("realEstate", {}).get("rate", 3.5)),
+            hysa_apr=float(assets_data.get("savings", {}).get("rate", 2.0)),
+            retirement_apr=float(assets_data.get("retirement", {}).get("rate", 10.0)),
+            cars_apr=float(assets_data.get("cars", {}).get("rate", -10.0)),
+            other_assets_apr=float(assets_data.get("otherAssets", {}).get("rate", 0.0)),
+            
+            mortgage_apr=float(liabilities_data.get("realEstateLoans", {}).get("rate", 6.0)),
+            cc_apr=float(liabilities_data.get("creditCardDebt", {}).get("rate", 22.0)),
+            personal_apr=float(liabilities_data.get("personalLoans", {}).get("rate", 12.0)),
+            student_apr=float(liabilities_data.get("studentLoans", {}).get("rate", 7.0)),
+            car_apr=float(liabilities_data.get("carLoans", {}).get("rate", 9.0)),
+            other_debt_apr=float(liabilities_data.get("otherDebt", {}).get("rate", 0.0))
+        )
+        
+        # Calculate monthly savings from spending reduction
+        monthly_savings = sum([cat["suggested_reduction"] for cat in top_categories])
+        
+        # Create MonthlyFlows object with optimized contributions
+        monthly_flows = MonthlyFlows(
+            # Original contributions
+            contrib_checking=float(contributions_data.get("contrib_checking", 0)),
+            contrib_hysa=float(contributions_data.get("contrib_hysa", 0)),
+            contrib_retirement=float(contributions_data.get("contrib_retirement", 0)),
+            move_checking_to_invest=float(contributions_data.get("move_checking_to_invest", 0)),
+            
+            # Debt payments
+            pay_mortgage=float(debt_payments_data.get("pay_mortgage", 0)),
+            pay_cc=float(debt_payments_data.get("pay_cc", 0)),
+            pay_personal=float(debt_payments_data.get("pay_personal", 0)),
+            pay_student=float(debt_payments_data.get("pay_student", 0)),
+            pay_car=float(debt_payments_data.get("pay_car", 0)),
+            pay_other_debt=float(debt_payments_data.get("pay_other_debt", 0))
+        )
+        
+        # Create optimized MonthlyFlows with additional savings
+        optimized_flows = MonthlyFlows(
+            # Add savings to retirement contributions (most impactful for long-term wealth)
+            contrib_checking=float(contributions_data.get("contrib_checking", 0)),
+            contrib_hysa=float(contributions_data.get("contrib_hysa", 0)),
+            contrib_retirement=float(contributions_data.get("contrib_retirement", 0)) + monthly_savings,
+            move_checking_to_invest=float(contributions_data.get("move_checking_to_invest", 0)),
+            
+            # Same debt payments
+            pay_mortgage=float(debt_payments_data.get("pay_mortgage", 0)),
+            pay_cc=float(debt_payments_data.get("pay_cc", 0)),
+            pay_personal=float(debt_payments_data.get("pay_personal", 0)),
+            pay_student=float(debt_payments_data.get("pay_student", 0)),
+            pay_car=float(debt_payments_data.get("pay_car", 0)),
+            pay_other_debt=float(debt_payments_data.get("pay_other_debt", 0))
+        )
+        
+        # Define time periods
+        time_periods = {
+            "3m": 3,
+            "1y": 12,
+            "2y": 24,
+            "5y": 60,
+            "10y": 120,
+            "20y": 240,
+            "50y": 600
+        }
+        
+        # Calculate both original and optimized projections
+        original_projections = {}
+        optimized_projections = {}
+        
+        for period_name, months in time_periods.items():
+            try:
+                # Original projections
+                df_original = simulate_future_wealth(
+                    start=wealth_inputs,
+                    months=months,
+                    assumptions=assumptions,
+                    flows=monthly_flows
+                )
+                
+                # Optimized projections
+                df_optimized = simulate_future_wealth(
+                    start=wealth_inputs,
+                    months=months,
+                    assumptions=assumptions,
+                    flows=optimized_flows
+                )
+                
+                # Process original projections
+                original_final = df_original.iloc[-1].to_dict()
+                original_time_series = []
+                for _, row in df_original.iterrows():
+                    original_time_series.append({
+                        "month": row["month"],
+                        "net_worth": float(row["net_worth"]),
+                        "assets_total": float(row["assets_total"]),
+                        "liabilities_total": float(row["liabilities_total"])
+                    })
+                
+                # Process optimized projections
+                optimized_final = df_optimized.iloc[-1].to_dict()
+                optimized_time_series = []
+                for _, row in df_optimized.iterrows():
+                    optimized_time_series.append({
+                        "month": row["month"],
+                        "net_worth": float(row["net_worth"]),
+                        "assets_total": float(row["assets_total"]),
+                        "liabilities_total": float(row["liabilities_total"])
+                    })
+                
+                # Calculate current net worth for comparison
+                current_net_worth = wealth_inputs.real_estate + wealth_inputs.checking + wealth_inputs.savings_hysa + wealth_inputs.retirement_invest + wealth_inputs.cars_value + wealth_inputs.other_assets - (wealth_inputs.real_estate_loans + wealth_inputs.credit_card_debt + wealth_inputs.personal_loans + wealth_inputs.student_loans + wealth_inputs.car_loans + wealth_inputs.other_debt)
+                
+                # Store projections
+                original_projections[period_name] = {
+                    "months": months,
+                    "net_worth": original_final["net_worth"],
+                    "net_worth_change": original_final["net_worth"] - current_net_worth,
+                    "time_series": original_time_series
+                }
+                
+                optimized_projections[period_name] = {
+                    "months": months,
+                    "net_worth": optimized_final["net_worth"],
+                    "net_worth_change": optimized_final["net_worth"] - current_net_worth,
+                    "time_series": optimized_time_series,
+                    "improvement": optimized_final["net_worth"] - original_final["net_worth"],
+                    "improvement_pct": ((optimized_final["net_worth"] - original_final["net_worth"]) / abs(original_final["net_worth"]) * 100) if original_final["net_worth"] != 0 else 0
+                }
+                
+            except Exception as e:
+                logger.error(f"Error calculating projections for {period_name}: {e}")
+                original_projections[period_name] = {"error": f"Failed to calculate: {str(e)}"}
+                optimized_projections[period_name] = {"error": f"Failed to calculate: {str(e)}"}
+        
+        return {
+            "current_net_worth": current_net_worth,
+            "top_spending_categories": top_categories,
+            "monthly_savings": monthly_savings,
+            "original_projections": original_projections,
+            "optimized_projections": optimized_projections,
+            "summary": {
+                "total_contributions_monthly": sum([
+                    monthly_flows.contrib_checking,
+                    monthly_flows.contrib_hysa,
+                    monthly_flows.contrib_retirement
+                ]),
+                "optimized_contributions_monthly": sum([
+                    optimized_flows.contrib_checking,
+                    optimized_flows.contrib_hysa,
+                    optimized_flows.contrib_retirement
+                ]),
+                "additional_monthly_savings": monthly_savings
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculating optimized wealth projections: {e}")
+        raise HTTPException(status_code=500, detail=f"Error calculating optimized wealth projections: {str(e)}")
+
 @app.get("/files/{file_id}/time-series")
 async def get_time_series_data(file_id: str, period: str = "30d"):
     """Get cumulative time series data for income and spending trends"""

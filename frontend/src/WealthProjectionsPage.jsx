@@ -26,11 +26,13 @@ ChartJS.register(
   TimeScale
 )
 
-function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
+function WealthProjectionsPage({ onBack, netWorthData, monthlyData, fileId }) {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1y')
   const [projectionData, setProjectionData] = useState(null)
+  const [optimizedData, setOptimizedData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [showSavingsAnalysis, setShowSavingsAnalysis] = useState(false)
 
   const timeOptions = [
     { value: '3m', label: '3 Months' },
@@ -45,6 +47,9 @@ function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
   useEffect(() => {
     if (selectedTimeframe) {
       fetchWealthProjections(selectedTimeframe)
+      if (fileId) {
+        fetchOptimizedProjections(selectedTimeframe)
+      }
     }
   }, [selectedTimeframe])
 
@@ -88,7 +93,45 @@ function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
     }
   }
 
+  const fetchOptimizedProjections = async (timeframe) => {
+    try {
+      // Prepare the data for the API call
+      const requestData = {
+        assets: netWorthData.assets,
+        liabilities: netWorthData.liabilities,
+        contributions: monthlyData.contributions,
+        debtPayments: monthlyData.debtPayments,
+        timeframe: timeframe,
+        file_id: fileId
+      }
+
+      console.log('Fetching optimized projections with data:', requestData)
+
+      const response = await fetch('http://localhost:8000/wealth/optimized-projections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Optimized projections received:', data)
+        setOptimizedData(data)
+        setShowSavingsAnalysis(true)
+      } else {
+        console.error('Optimized projections fetch error:', response.status, response.statusText)
+      }
+    } catch (err) {
+      console.error('Optimized projections fetch error:', err)
+    }
+  }
+
   const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return '$0'
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -97,8 +140,11 @@ function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
     }).format(amount)
   }
 
-  const prepareChartData = () => {
-    if (!projectionData?.projections || !projectionData.projections[selectedTimeframe]?.time_series) {
+  const prepareChartData = (useOptimized = false) => {
+    const dataSource = useOptimized ? optimizedData : projectionData
+    const dataKey = useOptimized ? 'optimized_projections' : 'projections'
+    
+    if (!dataSource?.[dataKey] || !dataSource[dataKey][selectedTimeframe]?.time_series) {
       return {
         labels: [],
         datasets: []
@@ -106,7 +152,7 @@ function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
     }
 
     // Use the month-over-month time series data from the selected timeframe
-    let timeSeriesData = projectionData.projections[selectedTimeframe].time_series
+    let timeSeriesData = dataSource[dataKey][selectedTimeframe].time_series
     
     // For longer time periods, sample the data to reduce density
     const timeframeMonths = {
@@ -299,6 +345,31 @@ function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
     return ((getTotalGrowth() / current) * 100)
   }
 
+  const getOptimizedCurrentNetWorth = () => {
+    if (!optimizedData?.optimized_projections?.[selectedTimeframe]?.time_series) return 0
+    return optimizedData.optimized_projections[selectedTimeframe].time_series[0]?.net_worth || 0
+  }
+
+  const getOptimizedProjectedNetWorth = () => {
+    if (!optimizedData?.optimized_projections?.[selectedTimeframe]?.time_series) return 0
+    const timeSeries = optimizedData.optimized_projections[selectedTimeframe].time_series
+    return timeSeries[timeSeries.length - 1]?.net_worth || 0
+  }
+
+  const getOptimizedTotalGrowth = () => {
+    if (!optimizedData?.optimized_projections?.[selectedTimeframe]) return 0
+    const current = getOptimizedCurrentNetWorth()
+    const projected = getOptimizedProjectedNetWorth()
+    return projected - current
+  }
+
+  const getSavingsImprovement = () => {
+    if (!optimizedData?.optimized_projections?.[selectedTimeframe]) return 0
+    const originalProjected = getProjectedNetWorth()
+    const optimizedProjected = getOptimizedProjectedNetWorth()
+    return optimizedProjected - originalProjected
+  }
+
   return (
     <div className="wealth-projections-page">
       <div className="projections-header">
@@ -352,7 +423,7 @@ function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
           </div>
         )}
 
-        {/* Chart Section */}
+        {/* Original Chart Section */}
         <div className="chart-section">
           <div className="chart-container">
             {loading ? (
@@ -369,11 +440,14 @@ function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
                 </button>
               </div>
             ) : projectionData ? (
-              <Line 
-                key={`wealth-chart-${selectedTimeframe}`}
-                data={prepareChartData()} 
-                options={chartOptions} 
-              />
+              <div className="single-chart">
+                <h3 className="chart-subtitle">Original Projections (No Savings)</h3>
+                <Line 
+                  key={`original-chart-${selectedTimeframe}`}
+                  data={prepareChartData(false)} 
+                  options={chartOptions} 
+                />
+              </div>
             ) : (
               <div className="no-data">
                 <h3>No Projection Data</h3>
@@ -382,6 +456,90 @@ function WealthProjectionsPage({ onBack, netWorthData, monthlyData }) {
             )}
           </div>
         </div>
+
+        {/* Savings Analysis Section */}
+        {showSavingsAnalysis && optimizedData && (
+          <div className="savings-analysis">
+            <h2 className="section-title">💡 Savings Opportunity Analysis</h2>
+            <p className="savings-description">
+              Based on your spending patterns, here are the top 3 categories where you could save 20%:
+            </p>
+            
+            {optimizedData.top_spending_categories && optimizedData.top_spending_categories.length > 0 ? (
+              <div className="spending-categories">
+                {optimizedData.top_spending_categories.slice(0, 3).map((category, index) => (
+                  <div key={index} className="category-card">
+                    <div className="category-info">
+                      <h4 className="category-name">{category.category}</h4>
+                      <p className="category-amount">Current: {formatCurrency(category.current_spending || category.amount)}</p>
+                      <p className="category-savings">
+                        Save 20%: <span className="savings-amount">{formatCurrency((category.current_spending || category.amount) * 0.2)}/month</span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-categories">
+                <p>No spending categories found. Upload transaction data to see savings opportunities.</p>
+              </div>
+            )}
+            
+            {optimizedData.monthly_savings > 0 && (
+              <div className="monthly-savings-summary">
+                <h3>Total Monthly Savings Potential</h3>
+                <p className="savings-total">{formatCurrency(optimizedData.monthly_savings)}/month</p>
+                <p className="savings-description">
+                  By cutting 20% from your top spending categories, you could save{' '}
+                  <strong>{formatCurrency(optimizedData.monthly_savings)}</strong> per month!
+                </p>
+              </div>
+            )}
+
+            {/* Comprehensive Summary */}
+            <div className="summary-section">
+              <h3 className="summary-title">Savings Impact Summary</h3>
+              <div className="summary-cards">
+                <div className="summary-card">
+                  <h4 className="summary-label">Current Net Worth</h4>
+                  <p className="summary-value">{formatCurrency(getOptimizedCurrentNetWorth())}</p>
+                </div>
+                <div className="summary-card">
+                  <h4 className="summary-label">Projected Net Worth</h4>
+                  <p className="summary-value">{formatCurrency(getOptimizedProjectedNetWorth())}</p>
+                </div>
+                <div className="summary-card">
+                  <h4 className="summary-label">Total Growth</h4>
+                  <p className={`summary-value ${getOptimizedTotalGrowth() >= 0 ? 'positive' : 'negative'}`}>
+                    {getOptimizedTotalGrowth() >= 0 ? '+' : ''}{formatCurrency(getOptimizedTotalGrowth())}
+                  </p>
+                </div>
+                <div className="summary-card">
+                  <h4 className="summary-label">Savings Improvement</h4>
+                  <p className={`summary-value ${getSavingsImprovement() >= 0 ? 'positive' : 'negative'}`}>
+                    {getSavingsImprovement() >= 0 ? '+' : ''}{formatCurrency(getSavingsImprovement())}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Optimized Chart Section */}
+        {showSavingsAnalysis && optimizedData && (
+          <div className="chart-section">
+            <div className="chart-container">
+              <div className="single-chart">
+                <h3 className="chart-subtitle">With 20% Savings Applied</h3>
+                <Line 
+                  key={`optimized-chart-${selectedTimeframe}`}
+                  data={prepareChartData(true)} 
+                  options={chartOptions} 
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

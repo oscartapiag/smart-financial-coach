@@ -2,7 +2,7 @@ import { useState } from 'react'
 import './NetWorthCalculator.css'
 import MonthlyPaymentsPage from './MonthlyPaymentsPage'
 
-function NetWorthCalculator({ onBack }) {
+function NetWorthCalculator({ onBack, fileId }) {
   const [assets, setAssets] = useState({
     realEstate: { value: 0, rate: 3.5 },
     checking: { value: 0, rate: 0 },
@@ -84,6 +84,7 @@ function NetWorthCalculator({ onBack }) {
     return <MonthlyPaymentsPage 
       onBack={handleBackFromMonthlyPayments} 
       netWorthData={{ assets, liabilities, netWorth }}
+      fileId={fileId}
     />
   }
 

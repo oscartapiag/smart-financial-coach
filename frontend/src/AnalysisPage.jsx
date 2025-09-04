@@ -794,7 +794,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
   }
 
   if (showNetWorthCalculator) {
-    return <NetWorthCalculator onBack={handleBackFromNetWorthCalculator} />
+    return <NetWorthCalculator onBack={handleBackFromNetWorthCalculator} fileId={fileId} />
   }
 
   return (

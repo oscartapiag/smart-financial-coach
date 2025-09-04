@@ -902,8 +902,8 @@ async def get_subscription_model_status():
     }
 
 @app.get("/files/{file_id}/insights")
-async def get_ai_insights(file_id: str, period: str = "30d"):
-    """Get AI-powered financial insights for the uploaded data"""
+async def get_ai_insights(file_id: str):
+    """Get AI-powered financial insights for the past month (30 days)"""
     csv_file = UPLOAD_DIR / f"{file_id}.csv"
     if not csv_file.exists():
         raise HTTPException(status_code=404, detail="File not found")
@@ -941,19 +941,11 @@ async def get_ai_insights(file_id: str, period: str = "30d"):
             errors='coerce'
         )
         
-        # Filter data based on time period
+        # Filter data for the past month (30 days)
         end_date = df_time_series[date_col].max()
+        start_date = end_date - pd.Timedelta(days=29)  # 30 days inclusive
         
-        if period == "14d":
-            start_date = end_date - pd.Timedelta(days=13)
-        elif period == "30d":
-            start_date = end_date - pd.Timedelta(days=29)
-        elif period == "90d":
-            start_date = end_date - pd.Timedelta(days=89)
-        else:  # 1y
-            start_date = end_date - pd.Timedelta(days=364)
-        
-        # Filter data to the specified time period
+        # Filter data to the past month
         df_current = df_time_series[df_time_series[date_col] >= start_date].copy()
         
         # Get prior period for comparison
@@ -964,7 +956,7 @@ async def get_ai_insights(file_id: str, period: str = "30d"):
         ].copy()
         
         if len(df_current) == 0:
-            raise HTTPException(status_code=400, detail=f"No data found for the specified period: {period}")
+            raise HTTPException(status_code=400, detail="No data found for the past month (30 days)")
         
         # Separate income and spending
         income_current = df_current[df_current['ml_category'] == 'Income']
@@ -1036,7 +1028,7 @@ async def get_ai_insights(file_id: str, period: str = "30d"):
         
         # Prepare inputs for LLM
         llm_inputs = {
-            "time_range": f"Last {period}",
+            "time_range": "Last 30d",
             "income": current_income,
             "expenses": current_expenses,
             "net": current_net,
@@ -1052,7 +1044,7 @@ async def get_ai_insights(file_id: str, period: str = "30d"):
             insights = generate_llm_cards(llm_inputs)
             return {
                 "file_id": file_id,
-                "period": period,
+                "period": "30d",
                 "insights": insights,
                 "summary": {
                     "current_income": current_income,

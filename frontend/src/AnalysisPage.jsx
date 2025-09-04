@@ -128,27 +128,26 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
     }
   }, [fileId, analysisData, timeSeriesData, categoryData])
 
-  // Separate useEffect to fetch AI insights after page loads (only once)
+  // Separate useEffect to fetch AI insights after page loads (only once, always 30 days)
   useEffect(() => {
     console.log('AI insights useEffect triggered:', { 
       analysisData: !!analysisData, 
       timeSeriesData: !!timeSeriesData, 
       categoryData: !!categoryData, 
       loading, 
-      selectedPeriod, 
       aiInsightsFetched 
     })
     
     if (analysisData && timeSeriesData && categoryData && !loading && !aiInsightsFetched) {
-      // Page has loaded, wait a bit then fetch AI insights in background
-      console.log('Page loaded, will fetch AI insights in background after delay...')
+      // Page has loaded, wait a bit then fetch AI insights in background (30 days only)
+      console.log('Page loaded, will fetch AI insights for 30 days in background after delay...')
       
       // Add a delay to ensure page is fully rendered
       const delayTimer = setTimeout(() => {
         try {
-          console.log('Starting AI insights fetch after delay...')
+          console.log('Starting AI insights fetch for 30 days after delay...')
           setAiInsightsFetched(true) // Mark as fetched to prevent re-triggering
-          fetchAiInsights(selectedPeriod)
+          fetchAiInsights()
         } catch (error) {
           console.error('Error in fetchAiInsights:', error)
           setAiInsightsError(true)
@@ -203,9 +202,9 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
     }
   }
 
-  const fetchAiInsights = async (period, retryCount = 0) => {
+  const fetchAiInsights = async (retryCount = 0) => {
     console.log('=== FETCH AI INSIGHTS CALLED ===')
-    console.log('Parameters:', { period, retryCount, aiInsightsLoading, fileId })
+    console.log('Parameters:', { retryCount, aiInsightsLoading, fileId })
     
     // Prevent multiple simultaneous calls
     if (aiInsightsLoading) {
@@ -217,8 +216,8 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
       console.log('Setting AI insights loading to true...')
       setAiInsightsLoading(true)
       setAiInsightsError(false)
-      const url = `http://localhost:8000/files/${fileId}/insights?period=${period}`
-      console.log(`Fetching AI insights for period: ${period} (attempt ${retryCount + 1})`)
+      const url = `http://localhost:8000/files/${fileId}/insights?period=30d`
+      console.log(`Fetching AI insights for 30 days (attempt ${retryCount + 1})`)
       console.log(`URL: ${url}`)
       
       // Add timeout to prevent hanging
@@ -241,7 +240,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
       
       if (response.ok) {
         const data = await response.json()
-        console.log(`AI insights received for ${period}:`, data)
+        console.log(`AI insights received for 30 days:`, data)
         
         // Validate the response structure
         if (data && data.insights && data.insights.cards && Array.isArray(data.insights.cards)) {
@@ -255,13 +254,13 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
           setAiInsightsError(true)
         }
       } else {
-        console.error(`Failed to fetch AI insights for ${period}:`, response.status, response.statusText)
+        console.error(`Failed to fetch AI insights for 30 days:`, response.status, response.statusText)
         setAiInsightsError(true)
       }
     } catch (err) {
       console.error('Error in fetchAiInsights:', err)
       if (err.name === 'AbortError') {
-        console.error('AI insights request timed out after 30 seconds')
+        console.error('AI insights request timed out after 60 seconds')
       } else {
         console.error('AI insights fetch error:', err)
       }
@@ -270,7 +269,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
       if (retryCount < 1) {
         console.log(`Retrying AI insights fetch in 5 seconds... (attempt ${retryCount + 2})`)
         setTimeout(() => {
-          fetchAiInsights(period, retryCount + 1)
+          fetchAiInsights(retryCount + 1)
         }, 5000)
         return
       }
@@ -286,10 +285,9 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
   const handlePeriodSelect = (period) => {
     console.log(`Period changed from ${selectedPeriod} to ${period}`)
     setSelectedPeriod(period)
-    setAiInsightsFetched(false) // Reset fetch flag for new period
     fetchTimeSeriesData(period)
     fetchCategoryData(period)
-    // AI insights will be fetched by the useEffect after a delay
+    // AI insights remain static for 30 days only
   }
 
   const prepareChartData = () => {
@@ -801,7 +799,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
               {/* Left Column - AI Insights */}
               <div className="left-column">
                 <div className="ai-insights-section">
-                  <h3 className="section-title">AI Insights</h3>
+                  <h3 className="section-title">AI Insights of the past 30 days</h3>
                   <div className="insights-content">
                     {aiInsightsLoading ? (
                       <div className="insight-card loading">

@@ -52,8 +52,8 @@ def test_upload_for_insights(csv_type=None):
             print("❌ Could not connect to server")
             return None
 
-def test_ai_insights(file_id, period="30d"):
-    """Test AI insights generation"""
+def test_ai_insights(file_id):
+    """Test AI insights generation for the past month"""
     if not file_id:
         print("❌ No file ID provided for AI insights test")
         return
@@ -61,7 +61,7 @@ def test_ai_insights(file_id, period="30d"):
     url = f"http://localhost:8000/files/{file_id}/insights"
     
     try:
-        response = requests.get(url, params={"period": period})
+        response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
             print(f"\n🤖 AI Insights Results:")
@@ -105,28 +105,24 @@ def test_ai_insights(file_id, period="30d"):
     except requests.exceptions.ConnectionError:
         print("❌ Could not connect to server")
 
-def test_different_periods(file_id):
-    """Test AI insights with different time periods"""
+def test_insights_single_call(file_id):
+    """Test AI insights for the past month"""
     if not file_id:
         return
         
-    print(f"\n🎯 Testing Different Time Periods:")
-    periods = ["14d", "30d", "90d", "1y"]
-    
-    for period in periods:
-        url = f"http://localhost:8000/files/{file_id}/insights"
-        try:
-            response = requests.get(url, params={"period": period})
-            if response.status_code == 200:
-                data = response.json()
-                cards = data.get('insights', {}).get('cards', [])
-                summary = data.get('summary', {})
-                print(f"  {period.upper()}: {len(cards)} insights, Net: ${summary.get('current_net', 0):.2f}")
-            else:
-                print(f"  {period.upper()}: Failed ({response.status_code})")
-        except requests.exceptions.ConnectionError:
-            print("❌ Could not connect to server")
-            break
+    print(f"\n🎯 Testing AI Insights (Past Month):")
+    url = f"http://localhost:8000/files/{file_id}/insights"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            cards = data.get('insights', {}).get('cards', [])
+            summary = data.get('summary', {})
+            print(f"  Past Month: {len(cards)} insights, Net: ${summary.get('current_net', 0):.2f}")
+        else:
+            print(f"  Past Month: Failed ({response.status_code})")
+    except requests.exceptions.ConnectionError:
+        print("❌ Could not connect to server")
 
 if __name__ == "__main__":
     print("🤖 Testing AI Insights Functionality...")
@@ -152,10 +148,7 @@ if __name__ == "__main__":
     # Test AI insights
     if file_id:
         test_ai_insights(file_id)
-        test_different_periods(file_id)
+        test_insights_single_call(file_id)
     
     print(f"\n🔗 AI Insights Endpoints:")
-    print(f"🤖 AI insights: http://localhost:8000/files/{file_id}/insights")
-    print(f"🤖 AI insights (14d): http://localhost:8000/files/{file_id}/insights?period=14d")
-    print(f"🤖 AI insights (90d): http://localhost:8000/files/{file_id}/insights?period=90d")
-    print(f"🤖 AI insights (1y): http://localhost:8000/files/{file_id}/insights?period=1y")
+    print(f"🤖 AI insights (Past Month): http://localhost:8000/files/{file_id}/insights")

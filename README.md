@@ -4,7 +4,7 @@ An AI-powered financial coach that transforms raw transaction data into **action
 
 Built for the Palo Alto Networks IT Hackathon 2025, Case Study.  
 
-> 🎥 **Demo Video :** [https://youtu.be/5SvmTr35uYE]  
+> 🎥 **Demo Video :** [https://youtu.be/5SvmTr35uYE], sorry for extra length, alot of features, and I am a little sick causing some stops
 > 📄 **Design Doc:** See `/docs/design.md`  
 
 ---

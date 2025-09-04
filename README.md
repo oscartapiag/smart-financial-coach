@@ -102,6 +102,8 @@ npm install
 npm run dev
 
 Open at http://localhost:5173
+```
+---
 
 ###🔒 Responsible AI & Privacy
 

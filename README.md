@@ -105,7 +105,7 @@ Open at http://localhost:5173
 ```
 ---
 
-###🔒 Responsible AI & Privacy
+##🔒 Responsible AI & Privacy
 
 No sensitive data stored: all uploads processed in-memory only.
 
@@ -115,7 +115,7 @@ Transparency: projections show assumptions and ranges.
 
 Ethics: avoids hard guarantees on outcomes, framed as guidance only.
 
-###📊 Success Metrics (per case study brief)
+##📊 Success Metrics (per case study brief)
 
 Behavioral Change: concrete, non-judgmental suggestions to reduce spend.
 
@@ -125,7 +125,7 @@ Trust & Security: private, demo-only, with disclaimers.
 
 AI Application: ML for categorization + anomaly detection, forecasting heuristics.
 
-📈 Future Enhancements
+## 📈 Future Enhancements
 
 Direct bank integrations (Plaid, Chase API).
 

@@ -77,6 +77,10 @@ function SubscriptionsPage({ fileId, onBack }) {
 
   const totalMonthlyCost = subscriptions?.total_monthly_cost || 0
   const totalYearlyCost = totalMonthlyCost * 12
+  
+  console.log('Subscriptions data:', subscriptions)
+  console.log('Total monthly cost:', totalMonthlyCost)
+  console.log('Total yearly cost:', totalYearlyCost)
 
   return (
     <div className="subscriptions-page">

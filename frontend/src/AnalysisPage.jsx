@@ -14,6 +14,7 @@ import {
   ArcElement,
 } from 'chart.js'
 import './AnalysisPage.css'
+import NetWorthCalculator from './NetWorthCalculator'
 
 // Register Chart.js components
 ChartJS.register(
@@ -44,6 +45,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
   const [aiInsightsError, setAiInsightsError] = useState(false)
   const [aiInsightsRetryCount, setAiInsightsRetryCount] = useState(0)
   const [aiInsightsFetched, setAiInsightsFetched] = useState(false)
+  const [showNetWorthCalculator, setShowNetWorthCalculator] = useState(false)
 
   // Debug AI insights state changes
   useEffect(() => {
@@ -71,7 +73,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
         }
         return prev + 10 // Increment by 10% every 100ms for 1 second
       })
-    }, 100)
+    }, 500)
 
     // Fetch analysis data and default time series data after loading completes
     const fetchInitialData = async () => {
@@ -288,6 +290,14 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
     fetchTimeSeriesData(period)
     fetchCategoryData(period)
     // AI insights remain static for 30 days only
+  }
+
+  const handleNavigateToNetWorthCalculator = () => {
+    setShowNetWorthCalculator(true)
+  }
+
+  const handleBackFromNetWorthCalculator = () => {
+    setShowNetWorthCalculator(false)
   }
 
   const prepareChartData = () => {
@@ -783,6 +793,10 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
     )
   }
 
+  if (showNetWorthCalculator) {
+    return <NetWorthCalculator onBack={handleBackFromNetWorthCalculator} />
+  }
+
   return (
     <div className="analysis-page">
       <div className="analysis-container">
@@ -790,7 +804,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
           <button className="back-button" onClick={onBack}>
             ← Back to Upload
           </button>
-          <h1 className="analysis-title">Financial Analysis</h1>
+          <h1 className="analysis-title">Financial Analysis Dashboard</h1>
         </div>
 
         {analysisData && (
@@ -895,29 +909,6 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
               </div>
             </div>
 
-            {/* Time-based Chart */}
-            {selectedPeriod && (
-              <div className="time-charts-section">
-                <div className="combined-chart-container">
-                  <h3 className="chart-title">
-                    Income vs. Spending Over Time ({selectedPeriod === '14d' ? '14 Days' : 
-                                                   selectedPeriod === '30d' ? '30 Days' : 
-                                                   selectedPeriod === '90d' ? '90 Days' : '1 Year'})
-                  </h3>
-                  <div className="chart-wrapper">
-                    {prepareCombinedTimeData() && (
-                      <Line 
-                        key={`line-chart-${selectedPeriod}`}
-                        data={prepareCombinedTimeData()} 
-                        options={lineChartOptions} 
-                      />
-                    )}
-                  </div>
-                  
-                </div>
-              </div>
-            )}
-
             {/* Chart Type Selection */}
             <div className="chart-type-section">
               <h3 className="section-title">Chart Type</h3>
@@ -973,6 +964,29 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
                       />
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Time-based Chart */}
+            {selectedPeriod && (
+              <div className="time-charts-section">
+                <div className="combined-chart-container">
+                  <h3 className="chart-title">
+                    Income vs. Spending Over Time ({selectedPeriod === '14d' ? '14 Days' : 
+                                                   selectedPeriod === '30d' ? '30 Days' : 
+                                                   selectedPeriod === '90d' ? '90 Days' : '1 Year'})
+                  </h3>
+                  <div className="chart-wrapper">
+                    {prepareCombinedTimeData() && (
+                      <Line 
+                        key={`line-chart-${selectedPeriod}`}
+                        data={prepareCombinedTimeData()} 
+                        options={lineChartOptions} 
+                      />
+                    )}
+                  </div>
+                  
                 </div>
               </div>
             )}
@@ -1053,23 +1067,23 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
                     
                     <button 
                       className="tool-button"
+                      onClick={handleNavigateToNetWorthCalculator}
+                    >
+                      <div className="tool-icon">📈</div>
+                      <div className="tool-info">
+                        <h4 className="tool-title">Net Worth Calculator</h4>
+                        <p className="tool-description">Calculate your net worth and see how it will change over time and when your debts will be paid off!</p>
+                      </div>
+                    </button>
+                    
+                    <button 
+                      className="tool-button"
                       onClick={() => alert('Credit Card Debt Strategies - Coming Soon!')}
                     >
                       <div className="tool-icon">💳</div>
                       <div className="tool-info">
                         <h4 className="tool-title">Credit Card Debt Strategies</h4>
                         <p className="tool-description">Get personalized strategies to pay off credit card debt faster.</p>
-                      </div>
-                    </button>
-                    
-                    <button 
-                      className="tool-button"
-                      onClick={() => alert('Wealth Predictor - Coming Soon!')}
-                    >
-                      <div className="tool-icon">📈</div>
-                      <div className="tool-info">
-                        <h4 className="tool-title">Wealth Predictor</h4>
-                        <p className="tool-description">Project your future wealth based on current spending patterns.</p>
                       </div>
                     </button>
                   </div>

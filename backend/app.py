@@ -26,6 +26,10 @@ from find_subscriptions import load_model as load_subscription_model, predict_su
 sys.path.append(str(Path(__file__).parent / "llm"))
 from llm_insights import generate_llm_cards
 
+# Add wealth calculator to path
+sys.path.append(str(Path(__file__).parent))
+from wealth_calculator import WealthInputs, Assumptions, MonthlyFlows, simulate_future_wealth
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -1061,6 +1065,193 @@ async def get_ai_insights(file_id: str):
     except Exception as e:
         logger.error(f"Error generating insights for file {file_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Error generating insights: {str(e)}")
+
+@app.post("/wealth/projections")
+async def calculate_wealth_projections(wealth_data: dict):
+    """Calculate future wealth projections based on current financial data"""
+    try:
+        # Extract data from the request
+        assets_data = wealth_data.get("assets", {})
+        liabilities_data = wealth_data.get("liabilities", {})
+        contributions_data = wealth_data.get("contributions", {})
+        debt_payments_data = wealth_data.get("debtPayments", {})
+        
+        # Create WealthInputs object
+        wealth_inputs = WealthInputs(
+            # Assets
+            real_estate=float(assets_data.get("realEstate", {}).get("value", 0)),
+            checking=float(assets_data.get("checking", {}).get("value", 0)),
+            savings_hysa=float(assets_data.get("savings", {}).get("value", 0)),
+            retirement_invest=float(assets_data.get("retirement", {}).get("value", 0)),
+            cars_value=float(assets_data.get("cars", {}).get("value", 0)),
+            other_assets=float(assets_data.get("otherAssets", {}).get("value", 0)),
+            
+            # Liabilities
+            real_estate_loans=float(liabilities_data.get("realEstateLoans", {}).get("value", 0)),
+            credit_card_debt=float(liabilities_data.get("creditCardDebt", {}).get("value", 0)),
+            personal_loans=float(liabilities_data.get("personalLoans", {}).get("value", 0)),
+            student_loans=float(liabilities_data.get("studentLoans", {}).get("value", 0)),
+            car_loans=float(liabilities_data.get("carLoans", {}).get("value", 0)),
+            other_debt=float(liabilities_data.get("otherDebt", {}).get("value", 0))
+        )
+        
+        # Create Assumptions object with rates from frontend
+        assumptions = Assumptions(
+            # Asset rates
+            real_estate_apr=float(assets_data.get("realEstate", {}).get("rate", 3.5)),
+            hysa_apr=float(assets_data.get("savings", {}).get("rate", 2.0)),
+            retirement_apr=float(assets_data.get("retirement", {}).get("rate", 10.0)),
+            cars_apr=float(assets_data.get("cars", {}).get("rate", -10.0)),
+            other_assets_apr=float(assets_data.get("otherAssets", {}).get("rate", 0.0)),
+            
+            # Debt rates
+            mortgage_apr=float(liabilities_data.get("realEstateLoans", {}).get("rate", 6.0)),
+            cc_apr=float(liabilities_data.get("creditCardDebt", {}).get("rate", 22.0)),
+            personal_apr=float(liabilities_data.get("personalLoans", {}).get("rate", 12.0)),
+            student_apr=float(liabilities_data.get("studentLoans", {}).get("rate", 7.0)),
+            car_apr=float(liabilities_data.get("carLoans", {}).get("rate", 9.0)),
+            other_debt_apr=float(liabilities_data.get("otherDebt", {}).get("rate", 0.0))
+        )
+        
+        # Create MonthlyFlows object
+        monthly_flows = MonthlyFlows(
+            # Contributions
+            contrib_checking=float(contributions_data.get("contrib_checking", 0)),
+            contrib_hysa=float(contributions_data.get("contrib_hysa", 0)),
+            contrib_retirement=float(contributions_data.get("contrib_retirement", 0)),
+            move_checking_to_invest=float(contributions_data.get("move_checking_to_invest", 0)),
+            
+            # Debt payments
+            pay_mortgage=float(debt_payments_data.get("pay_mortgage", 0)),
+            pay_cc=float(debt_payments_data.get("pay_cc", 0)),
+            pay_personal=float(debt_payments_data.get("pay_personal", 0)),
+            pay_student=float(debt_payments_data.get("pay_student", 0)),
+            pay_car=float(debt_payments_data.get("pay_car", 0)),
+            pay_other_debt=float(debt_payments_data.get("pay_other_debt", 0))
+        )
+        
+        # Define time periods in months
+        time_periods = {
+            "3m": 3,
+            "1y": 12,
+            "2y": 24,
+            "5y": 60,
+            "10y": 120,
+            "20y": 240,
+            "50y": 600
+        }
+        
+        projections = {}
+        
+        # Calculate projections for each time period
+        for period_name, months in time_periods.items():
+            try:
+                # Run simulation
+                df = simulate_future_wealth(
+                    start=wealth_inputs,
+                    months=months,
+                    assumptions=assumptions,
+                    flows=monthly_flows
+                )
+                
+                # Get the final month data
+                final_data = df.iloc[-1].to_dict()
+                
+                # Calculate key metrics
+                current_net_worth = wealth_inputs.real_estate + wealth_inputs.checking + wealth_inputs.savings_hysa + wealth_inputs.retirement_invest + wealth_inputs.cars_value + wealth_inputs.other_assets - (wealth_inputs.real_estate_loans + wealth_inputs.credit_card_debt + wealth_inputs.personal_loans + wealth_inputs.student_loans + wealth_inputs.car_loans + wealth_inputs.other_debt)
+                
+                # Convert DataFrame to list of monthly data for time series
+                time_series_data = []
+                for _, row in df.iterrows():
+                    time_series_data.append({
+                        "month": row["month"],
+                        "net_worth": float(row["net_worth"]),
+                        "assets_total": float(row["assets_total"]),
+                        "liabilities_total": float(row["liabilities_total"]),
+                        "breakdown": {
+                            "real_estate": float(row["real_estate"]),
+                            "checking": float(row["checking"]),
+                            "savings_hysa": float(row["savings_hysa"]),
+                            "retirement_invest": float(row["retirement_invest"]),
+                            "cars_value": float(row["cars_value"]),
+                            "other_assets": float(row["other_assets"]),
+                            "real_estate_loans": float(row["real_estate_loans"]),
+                            "credit_card_debt": float(row["credit_card_debt"]),
+                            "personal_loans": float(row["personal_loans"]),
+                            "student_loans": float(row["student_loans"]),
+                            "car_loans": float(row["car_loans"]),
+                            "other_debt": float(row["other_debt"])
+                        }
+                    })
+                
+                projections[period_name] = {
+                    "months": months,
+                    "net_worth": final_data["net_worth"],
+                    "net_worth_change": final_data["net_worth"] - current_net_worth,
+                    "net_worth_change_pct": ((final_data["net_worth"] - current_net_worth) / abs(current_net_worth) * 100) if current_net_worth != 0 else 0,
+                    "assets_total": final_data["assets_total"],
+                    "liabilities_total": final_data["liabilities_total"],
+                    "time_series": time_series_data,
+                    "breakdown": {
+                        "real_estate": final_data["real_estate"],
+                        "checking": final_data["checking"],
+                        "savings_hysa": final_data["savings_hysa"],
+                        "retirement_invest": final_data["retirement_invest"],
+                        "cars_value": final_data["cars_value"],
+                        "other_assets": final_data["other_assets"],
+                        "real_estate_loans": final_data["real_estate_loans"],
+                        "credit_card_debt": final_data["credit_card_debt"],
+                        "personal_loans": final_data["personal_loans"],
+                        "student_loans": final_data["student_loans"],
+                        "car_loans": final_data["car_loans"],
+                        "other_debt": final_data["other_debt"]
+                    }
+                }
+                
+            except Exception as e:
+                logger.error(f"Error calculating projection for {period_name}: {e}")
+                projections[period_name] = {
+                    "error": f"Failed to calculate projection: {str(e)}"
+                }
+        
+        # Calculate current net worth for reference
+        current_net_worth = wealth_inputs.real_estate + wealth_inputs.checking + wealth_inputs.savings_hysa + wealth_inputs.retirement_invest + wealth_inputs.cars_value + wealth_inputs.other_assets - (wealth_inputs.real_estate_loans + wealth_inputs.credit_card_debt + wealth_inputs.personal_loans + wealth_inputs.student_loans + wealth_inputs.car_loans + wealth_inputs.other_debt)
+        
+        return {
+            "current_net_worth": current_net_worth,
+            "projections": projections,
+            "summary": {
+                "total_contributions_monthly": sum([
+                    monthly_flows.contrib_checking,
+                    monthly_flows.contrib_hysa,
+                    monthly_flows.contrib_retirement
+                ]),
+                "total_debt_payments_monthly": sum([
+                    monthly_flows.pay_mortgage,
+                    monthly_flows.pay_cc,
+                    monthly_flows.pay_personal,
+                    monthly_flows.pay_student,
+                    monthly_flows.pay_car,
+                    monthly_flows.pay_other_debt
+                ]),
+                "net_monthly_cash_flow": sum([
+                    monthly_flows.contrib_checking,
+                    monthly_flows.contrib_hysa,
+                    monthly_flows.contrib_retirement
+                ]) - sum([
+                    monthly_flows.pay_mortgage,
+                    monthly_flows.pay_cc,
+                    monthly_flows.pay_personal,
+                    monthly_flows.pay_student,
+                    monthly_flows.pay_car,
+                    monthly_flows.pay_other_debt
+                ])
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculating wealth projections: {e}")
+        raise HTTPException(status_code=500, detail=f"Error calculating wealth projections: {str(e)}")
 
 @app.get("/files/{file_id}/time-series")
 async def get_time_series_data(file_id: str, period: str = "30d"):

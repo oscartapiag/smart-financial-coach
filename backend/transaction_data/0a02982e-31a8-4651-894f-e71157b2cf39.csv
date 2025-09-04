@@ -1,0 +1,517 @@
+date,description,category,amount,account
+2025-04-05,Taco Truck,Restaurants,-22.59,Checking
+2024-10-02,Property Mgmt Co,Rent,-1917.4,Checking
+2025-07-02,Trader Joe's,Groceries,-72.25,Checking
+2024-09-26,Chevron,Transportation,-67.81,Checking
+2025-08-13,Spotify,Entertainment,-10.99,Checking
+2025-03-31,Exxon,Transportation,-67.2,Checking
+2025-01-23,McDonald's,Restaurants,-22.42,Checking
+2025-03-28,Local Deli,Restaurants,-26.52,Checking
+2025-02-20,Local Deli,Restaurants,-28.42,Checking
+2024-11-27,Lyft,Transportation,-32.51,Checking
+2025-05-05,City Gym,Healthcare,-39.99,Checking
+2025-05-17,Olive Garden,Restaurants,-13.81,Checking
+2025-04-26,Subway,Restaurants,-29.29,Checking
+2025-05-07,PG&E,Utilities,-115.01,Checking
+2025-06-12,Target,Shopping,-288.99,Checking
+2025-05-08,Best Buy,Shopping,-101.67,Checking
+2025-07-03,Olive Garden,Restaurants,-10.99,Checking
+2025-07-01,Property Mgmt Co,Rent,-1577.94,Checking
+2025-06-02,Company Payroll,Salary,2094.78,Checking
+2025-08-19,Kaiser,Healthcare,-83.74,Checking
+2025-01-01,Olive Garden,Restaurants,-23.5,Checking
+2025-08-14,Venmo,Misc,-60.69,Checking
+2025-03-27,McDonald's,Restaurants,-25.77,Checking
+2024-11-30,Olive Garden,Restaurants,-30.91,Checking
+2025-03-11,Uber,Transportation,-13.62,Checking
+2024-09-07,Lyft,Transportation,-12.97,Checking
+2025-07-02,City Gym,Healthcare,-39.99,Checking
+2025-05-21,Costco,Groceries,-89.03,Checking
+2025-07-06,Home Depot,Shopping,-64.73,Checking
+2024-09-26,Kaiser,Healthcare,-164.15,Checking
+2025-01-21,PayPal,Misc,-22.13,Checking
+2025-08-12,McDonald's,Restaurants,-22.96,Checking
+2025-01-28,Taco Truck,Restaurants,-20.9,Checking
+2025-01-05,City Gym,Healthcare,-39.99,Checking
+2024-09-22,McDonald's,Restaurants,-23.26,Checking
+2024-12-02,Company Payroll,Salary,1908.75,Checking
+2024-11-23,Best Buy,Shopping,-55.64,Checking
+2025-04-21,Uber,Transportation,-25.64,Checking
+2025-07-14,Ikea,Shopping,-91.76,Checking
+2025-01-05,Netflix,Entertainment,-15.49,Checking
+2025-06-27,AT&T,Utilities,-63.21,Checking
+2025-04-22,Amazon,Shopping,-17.38,Checking
+2024-11-07,PG&E,Utilities,-173.93,Checking
+2025-07-11,Home Depot,Shopping,-66.69,Checking
+2025-01-11,Trader Joe's,Groceries,-45.91,Checking
+2025-03-03,Company Payroll,Salary,2474.12,Checking
+2025-01-27,PayPal,Misc,-70.46,Checking
+2025-07-15,Walmart,Groceries,-113.49,Checking
+2025-02-10,Comcast,Utilities,-117.23,Checking
+2025-03-04,Subway,Restaurants,-14.4,Checking
+2024-10-17,Taco Truck,Restaurants,-18.79,Checking
+2025-09-03,Landlord LLC,Rent,-1773.52,Checking
+2025-08-05,Olive Garden,Restaurants,-22.3,Checking
+2024-10-07,Exxon,Transportation,-81.72,Checking
+2025-03-09,Local Deli,Restaurants,-26.3,Checking
+2024-11-23,Apple Cash,Misc,-7.25,Checking
+2025-01-19,Uber,Transportation,-9.72,Checking
+2025-07-10,Apple Cash,Misc,-40.25,Checking
+2024-11-12,Comcast,Utilities,-72.76,Checking
+2024-09-06,Netflix,Entertainment,-15.49,Checking
+2024-10-25,Walgreens,Healthcare,-53.75,Checking
+2025-06-02,Taco Truck,Restaurants,-20.16,Checking
+2025-06-28,Subway,Restaurants,-10.44,Checking
+2025-03-31,McDonald's,Restaurants,-19.46,Checking
+2024-09-11,Walmart,Groceries,-44.13,Checking
+2025-06-07,CVS Pharmacy,Healthcare,-52.38,Checking
+2025-03-04,Walgreens,Healthcare,-176.85,Checking
+2024-10-22,Etsy,Shopping,-62.05,Checking
+2024-12-09,Chipotle,Restaurants,-18.24,Checking
+2025-05-05,Landlord LLC,Rent,-1791.56,Checking
+2025-06-03,Olive Garden,Restaurants,-16.38,Checking
+2025-07-04,Local Deli,Restaurants,-30.66,Checking
+2025-02-03,Company Payroll,Salary,2095.91,Checking
+2025-05-08,Netflix,Entertainment,-15.49,Checking
+2024-12-10,Amazon,Shopping,-76.05,Checking
+2025-08-04,Property Mgmt Co,Rent,-1709.45,Checking
+2024-11-02,City Gym,Healthcare,-39.99,Checking
+2025-03-28,Costco,Groceries,-102.55,Checking
+2025-07-13,Comcast,Utilities,-72.85,Checking
+2025-05-15,Company Payroll,Salary,2131.17,Checking
+2025-06-15,Taco Truck,Restaurants,-28.37,Checking
+2024-12-24,AT&T,Utilities,-80.57,Checking
+2024-10-23,AT&T,Utilities,-63.74,Checking
+2025-07-08,Taco Truck,Restaurants,-19.34,Checking
+2025-03-26,Local Deli,Restaurants,-17.51,Checking
+2025-03-29,Taco Truck,Restaurants,-15.73,Checking
+2025-03-03,Etsy,Shopping,-61.07,Checking
+2024-12-19,Starbucks,Restaurants,-23.24,Checking
+2025-05-25,Trader Joe's,Groceries,-57.04,Checking
+2025-02-23,Subway,Restaurants,-12.28,Checking
+2024-12-13,Spotify,Entertainment,-10.99,Checking
+2024-11-15,Company Payroll,Salary,1894.27,Checking
+2025-03-23,Safeway,Groceries,-70.71,Checking
+2025-06-24,Venmo,Misc,-106.62,Checking
+2024-12-06,Uber,Transportation,-11.46,Checking
+2024-09-04,Company Payroll,Salary,2264.84,Checking
+2024-09-02,City Gym,Healthcare,-39.99,Checking
+2024-12-06,PG&E,Utilities,-176.72,Checking
+2025-02-11,Target,Shopping,-117.89,Checking
+2024-09-16,Walmart,Groceries,-55.5,Checking
+2025-07-11,Lyft,Transportation,-13.6,Checking
+2025-04-15,Starbucks,Restaurants,-25.37,Checking
+2025-08-09,Starbucks,Restaurants,-14.74,Checking
+2025-05-28,Ikea,Shopping,-57.98,Checking
+2025-07-22,iCloud,Entertainment,-2.99,Checking
+2024-12-04,Lyft,Transportation,-14.97,Checking
+2025-07-02,Amazon,Shopping,-46.51,Checking
+2024-12-05,Netflix,Entertainment,-15.49,Checking
+2024-09-26,Costco,Groceries,-135.09,Checking
+2025-04-27,Trader Joe's,Groceries,-112.99,Checking
+2025-01-06,PG&E,Utilities,-109.61,Checking
+2024-12-16,Company Payroll,Salary,2034.74,Checking
+2024-12-19,Lyft,Transportation,-38.66,Checking
+2025-01-02,Property Mgmt Co,Rent,-2156.05,Checking
+2024-11-07,Walgreens,Healthcare,-152.43,Checking
+2025-08-29,Walgreens,Healthcare,-118.48,Checking
+2025-04-25,Subway,Restaurants,-17.78,Checking
+2025-01-26,McDonald's,Restaurants,-8.47,Checking
+2025-05-11,Comcast,Utilities,-115.73,Checking
+2025-02-25,Walmart,Groceries,-111.97,Checking
+2025-04-06,Chipotle,Restaurants,-15.16,Checking
+2025-04-01,Company Payroll,Salary,2010.57,Checking
+2025-01-07,Uber,Transportation,-16.47,Checking
+2025-03-02,Trader Joe's,Groceries,-96.01,Checking
+2025-05-06,Local Deli,Restaurants,-17.99,Checking
+2024-12-29,Trader Joe's,Groceries,-50.36,Checking
+2025-02-28,Chevron,Transportation,-72.5,Checking
+2024-10-15,Spotify,Entertainment,-10.99,Checking
+2025-03-09,Lyft,Transportation,-38.21,Checking
+2024-10-14,Trader Joe's,Groceries,-136.99,Checking
+2025-06-15,Olive Garden,Restaurants,-9.84,Checking
+2025-06-11,Starbucks,Restaurants,-34.52,Checking
+2024-10-01,Whole Foods,Groceries,-45.63,Checking
+2025-02-24,Whole Foods,Groceries,-62.07,Checking
+2024-12-16,Subway,Restaurants,-8.52,Checking
+2025-06-22,Subway,Restaurants,-32.95,Checking
+2024-10-01,Taco Truck,Restaurants,-22.04,Checking
+2025-02-04,Olive Garden,Restaurants,-34.19,Checking
+2024-09-20,Subway,Restaurants,-12.25,Checking
+2025-08-04,City Gym,Healthcare,-39.99,Checking
+2025-02-21,Venmo,Misc,-116.55,Checking
+2025-01-23,Local Deli,Restaurants,-14.57,Checking
+2025-05-22,iCloud,Entertainment,-2.99,Checking
+2024-12-27,Shell Gas,Transportation,-38.38,Checking
+2024-10-22,iCloud,Entertainment,-2.99,Checking
+2025-02-05,CVS Pharmacy,Healthcare,-96.73,Checking
+2025-03-04,Lyft,Transportation,-23.09,Checking
+2025-07-09,Olive Garden,Restaurants,-9.41,Checking
+2025-03-12,PayPal,Misc,-11.96,Checking
+2025-05-15,Spotify,Entertainment,-10.99,Checking
+2024-11-29,Taco Truck,Restaurants,-21.63,Checking
+2024-09-10,Apple Cash,Misc,-83.44,Checking
+2025-03-22,iCloud,Entertainment,-2.99,Checking
+2025-09-01,City Gym,Healthcare,-39.99,Checking
+2024-10-28,PayPal,Misc,-93.38,Checking
+2025-05-09,McDonald's,Restaurants,-8.78,Checking
+2025-03-13,Spotify,Entertainment,-10.99,Checking
+2025-01-21,CVS Pharmacy,Healthcare,-112.32,Checking
+2024-09-17,Spotify,Entertainment,-10.99,Checking
+2025-07-19,Uber,Transportation,-18.64,Checking
+2025-06-07,Whole Foods,Groceries,-129.18,Checking
+2025-05-24,AT&T,Utilities,-92.78,Checking
+2025-01-15,Costco,Groceries,-75.09,Checking
+2024-12-02,Walgreens,Healthcare,-72.29,Checking
+2025-01-21,Olive Garden,Restaurants,-31.45,Checking
+2024-09-21,Shell Gas,Transportation,-66.49,Checking
+2025-03-16,Home Depot,Shopping,-35.83,Checking
+2024-12-16,Whole Foods,Groceries,-28.34,Checking
+2025-07-16,Starbucks,Restaurants,-20.11,Checking
+2025-08-03,PG&E,Utilities,-145.67,Checking
+2025-06-22,Exxon,Transportation,-43.86,Checking
+2025-03-10,Chipotle,Restaurants,-26.3,Checking
+2025-02-06,PG&E,Utilities,-80.56,Checking
+2024-09-16,Company Payroll,Salary,2089.51,Checking
+2025-01-23,iCloud,Entertainment,-2.99,Checking
+2025-04-07,PG&E,Utilities,-183.1,Checking
+2025-02-02,McDonald's,Restaurants,-20.28,Checking
+2024-10-12,Comcast,Utilities,-110.57,Checking
+2025-07-23,Trader Joe's,Groceries,-113.68,Checking
+2025-07-31,Uber,Transportation,-17.39,Checking
+2024-10-14,Taco Truck,Restaurants,-17.33,Checking
+2025-07-25,McDonald's,Restaurants,-15.78,Checking
+2025-04-20,Shell Gas,Transportation,-73.62,Checking
+2025-05-08,Shell Gas,Transportation,-62.96,Checking
+2025-03-20,Olive Garden,Restaurants,-26.44,Checking
+2025-07-08,Walmart,Groceries,-60.59,Checking
+2025-02-10,Local Deli,Restaurants,-19.83,Checking
+2025-05-31,Chevron,Transportation,-37.55,Checking
+2024-09-21,Venmo,Misc,-22.03,Checking
+2025-01-16,McDonald's,Restaurants,-22.94,Checking
+2025-07-29,Starbucks,Restaurants,-17.44,Checking
+2025-06-15,Taco Truck,Restaurants,-23.67,Checking
+2025-07-01,Taco Truck,Restaurants,-14.91,Checking
+2025-04-27,Whole Foods,Groceries,-125.01,Checking
+2025-04-14,Spotify,Entertainment,-10.99,Checking
+2025-05-04,Costco,Groceries,-65.26,Checking
+2024-10-15,Company Payroll,Salary,2092.47,Checking
+2025-01-28,Safeway,Groceries,-53.23,Checking
+2024-10-03,Home Depot,Shopping,-83.02,Checking
+2025-06-26,Lyft,Transportation,-18.71,Checking
+2025-08-15,Local Deli,Restaurants,-12.66,Checking
+2025-08-05,Netflix,Entertainment,-15.49,Checking
+2025-08-22,Starbucks,Restaurants,-17.38,Checking
+2024-11-01,Landlord LLC,Rent,-2504.45,Checking
+2025-04-23,AT&T,Utilities,-108.68,Checking
+2024-09-23,AT&T,Utilities,-86.55,Checking
+2025-06-11,Uber,Transportation,-29.44,Checking
+2025-02-06,Netflix,Entertainment,-15.49,Checking
+2025-02-14,Local Deli,Restaurants,-17.0,Checking
+2024-09-30,Safeway,Groceries,-26.7,Checking
+2024-10-07,PG&E,Utilities,-88.55,Checking
+2025-01-15,Walmart,Groceries,-53.04,Checking
+2024-09-19,Whole Foods,Groceries,-42.8,Checking
+2025-06-23,Lyft,Transportation,-17.91,Checking
+2025-03-22,Exxon,Transportation,-50.96,Checking
+2025-04-26,Local Deli,Restaurants,-32.54,Checking
+2025-08-31,Lyft,Transportation,-12.01,Checking
+2025-04-09,Netflix,Entertainment,-15.49,Checking
+2024-09-12,Comcast,Utilities,-102.11,Checking
+2024-09-18,Amazon,Shopping,-57.05,Checking
+2024-09-23,Starbucks,Restaurants,-34.96,Checking
+2025-05-15,PayPal,Misc,-100.68,Checking
+2025-05-28,Ikea,Shopping,-57.22,Checking
+2025-07-05,Starbucks,Restaurants,-15.86,Checking
+2024-12-04,PayPal,Misc,-54.86,Checking
+2025-02-27,Lyft,Transportation,-39.96,Checking
+2024-12-21,PayPal,Misc,-44.24,Checking
+2025-06-06,Local Deli,Restaurants,-9.06,Checking
+2024-11-22,iCloud,Entertainment,-2.99,Checking
+2025-04-16,Olive Garden,Restaurants,-27.23,Checking
+2025-07-17,Lyft,Transportation,-20.49,Checking
+2025-06-12,Starbucks,Restaurants,-30.46,Checking
+2025-06-27,Trader Joe's,Groceries,-99.23,Checking
+2025-02-15,Safeway,Groceries,-34.25,Checking
+2024-11-08,Netflix,Entertainment,-15.49,Checking
+2025-03-15,Etsy,Shopping,-114.43,Checking
+2025-03-27,Best Buy,Shopping,-54.89,Checking
+2025-03-14,Safeway,Groceries,-137.51,Checking
+2024-11-26,AT&T,Utilities,-73.74,Checking
+2025-04-22,Chipotle,Restaurants,-31.39,Checking
+2025-06-19,Safeway,Groceries,-71.05,Checking
+2025-04-24,PayPal,Misc,-10.92,Checking
+2025-08-03,Whole Foods,Groceries,-52.14,Checking
+2024-12-06,Uber,Transportation,-38.84,Checking
+2025-07-07,Costco,Groceries,-67.3,Checking
+2024-11-08,Costco,Groceries,-45.23,Checking
+2025-08-28,Home Depot,Shopping,-170.46,Checking
+2025-01-13,Comcast,Utilities,-91.75,Checking
+2025-08-05,Walmart,Groceries,-122.6,Checking
+2025-03-02,Local Deli,Restaurants,-23.65,Checking
+2025-08-01,Company Payroll,Salary,2455.81,Checking
+2025-08-15,Uber,Transportation,-24.56,Checking
+2025-01-09,Costco,Groceries,-64.14,Checking
+2025-04-15,Company Payroll,Salary,1833.93,Checking
+2024-10-27,Chipotle,Restaurants,-29.47,Checking
+2025-07-01,Subway,Restaurants,-25.06,Checking
+2024-10-08,Olive Garden,Restaurants,-13.39,Checking
+2025-02-13,Exxon,Transportation,-62.97,Checking
+2025-06-13,Spotify,Entertainment,-10.99,Checking
+2025-03-21,McDonald's,Restaurants,-25.45,Checking
+2025-05-20,McDonald's,Restaurants,-19.94,Checking
+2024-12-14,Olive Garden,Restaurants,-11.66,Checking
+2025-03-03,City Gym,Healthcare,-39.99,Checking
+2024-10-01,Company Payroll,Salary,2050.38,Checking
+2025-05-10,McDonald's,Restaurants,-32.88,Checking
+2025-08-15,Venmo,Misc,-13.39,Checking
+2025-08-23,Local Deli,Restaurants,-33.04,Checking
+2025-05-07,Walmart,Groceries,-42.79,Checking
+2025-03-14,Amazon,Shopping,-14.99,Checking
+2024-12-13,Comcast,Utilities,-81.72,Checking
+2025-04-17,Subway,Restaurants,-13.98,Checking
+2025-08-21,iCloud,Entertainment,-2.99,Checking
+2025-03-17,Local Deli,Restaurants,-19.13,Checking
+2025-02-15,Trader Joe's,Groceries,-130.35,Checking
+2025-07-16,Uber,Transportation,-33.97,Checking
+2025-03-02,Venmo,Misc,-95.48,Checking
+2025-09-04,PG&E,Utilities,-129.72,Checking
+2025-07-31,Subway,Restaurants,-27.64,Checking
+2025-03-11,Uber,Transportation,-22.99,Checking
+2024-09-11,Subway,Restaurants,-18.9,Checking
+2024-09-09,Starbucks,Restaurants,-9.85,Checking
+2025-02-22,Taco Truck,Restaurants,-33.52,Checking
+2025-06-21,iCloud,Entertainment,-2.99,Checking
+2025-07-09,Netflix,Entertainment,-15.49,Checking
+2025-05-05,Subway,Restaurants,-12.25,Checking
+2024-09-16,Trader Joe's,Groceries,-128.78,Checking
+2025-01-09,Costco,Groceries,-95.83,Checking
+2024-10-22,Lyft,Transportation,-31.03,Checking
+2024-10-03,City Gym,Healthcare,-39.99,Checking
+2025-02-15,Venmo,Misc,-6.76,Checking
+2025-07-15,Company Payroll,Salary,2246.54,Checking
+2025-08-30,Uber,Transportation,-34.6,Checking
+2025-03-04,PG&E,Utilities,-130.12,Checking
+2024-10-12,Local Deli,Restaurants,-19.65,Checking
+2024-12-14,Costco,Groceries,-86.9,Checking
+2025-08-07,McDonald's,Restaurants,-34.9,Checking
+2025-02-27,Local Deli,Restaurants,-34.68,Checking
+2025-03-04,PayPal,Misc,-114.14,Checking
+2025-01-13,Spotify,Entertainment,-10.99,Checking
+2025-03-23,Safeway,Groceries,-59.44,Checking
+2024-09-23,Starbucks,Restaurants,-9.07,Checking
+2025-02-15,Local Deli,Restaurants,-33.57,Checking
+2024-10-22,Chevron,Transportation,-52.13,Checking
+2025-04-17,Starbucks,Restaurants,-11.07,Checking
+2024-10-14,Trader Joe's,Groceries,-117.26,Checking
+2025-05-28,Local Deli,Restaurants,-11.87,Checking
+2025-03-29,Lyft,Transportation,-24.99,Checking
+2025-07-20,Walmart,Groceries,-57.77,Checking
+2025-05-04,Walgreens,Healthcare,-81.83,Checking
+2025-08-12,Comcast,Utilities,-85.41,Checking
+2024-09-05,Best Buy,Shopping,-56.59,Checking
+2025-06-07,Olive Garden,Restaurants,-16.68,Checking
+2024-09-10,McDonald's,Restaurants,-26.08,Checking
+2025-08-03,Uber,Transportation,-13.4,Checking
+2025-06-03,PG&E,Utilities,-103.95,Checking
+2025-08-08,Apple Cash,Misc,-97.54,Checking
+2025-06-20,Uber,Transportation,-18.67,Checking
+2025-04-20,Exxon,Transportation,-36.94,Checking
+2024-10-26,Ikea,Shopping,-82.02,Checking
+2025-02-15,Chipotle,Restaurants,-19.16,Checking
+2024-10-24,Local Deli,Restaurants,-33.39,Checking
+2025-05-05,Starbucks,Restaurants,-28.01,Checking
+2025-01-23,Local Deli,Restaurants,-20.85,Checking
+2025-04-04,City Gym,Healthcare,-39.99,Checking
+2025-03-14,Ikea,Shopping,-89.93,Checking
+2024-11-25,Subway,Restaurants,-32.07,Checking
+2025-02-01,Whole Foods,Groceries,-139.95,Checking
+2025-01-17,Starbucks,Restaurants,-24.11,Checking
+2024-10-22,McDonald's,Restaurants,-13.21,Checking
+2025-07-14,Trader Joe's,Groceries,-136.12,Checking
+2025-07-04,PG&E,Utilities,-96.2,Checking
+2025-06-10,Trader Joe's,Groceries,-110.77,Checking
+2025-06-05,Trader Joe's,Groceries,-54.44,Checking
+2024-09-23,iCloud,Entertainment,-2.99,Checking
+2025-01-07,Local Deli,Restaurants,-16.52,Checking
+2025-05-04,Shell Gas,Transportation,-71.09,Checking
+2025-06-20,Local Deli,Restaurants,-16.73,Checking
+2024-12-11,Olive Garden,Restaurants,-28.55,Checking
+2025-06-01,City Gym,Healthcare,-39.99,Checking
+2024-12-31,McDonald's,Restaurants,-30.46,Checking
+2025-03-05,Netflix,Entertainment,-15.49,Checking
+2025-08-18,Starbucks,Restaurants,-11.5,Checking
+2025-08-04,McDonald's,Restaurants,-15.07,Checking
+2025-01-14,Costco,Groceries,-45.26,Checking
+2025-01-15,Company Payroll,Salary,2197.32,Checking
+2025-08-06,Olive Garden,Restaurants,-21.47,Checking
+2025-04-22,PayPal,Misc,-113.23,Checking
+2025-02-16,Home Depot,Shopping,-70.71,Checking
+2025-05-01,Company Payroll,Salary,1800.01,Checking
+2025-09-25,AT&T,Utilities,-77.76,Checking
+2025-06-10,Lyft,Transportation,-30.35,Checking
+2025-03-14,Comcast,Utilities,-115.11,Checking
+2024-11-06,Lyft,Transportation,-23.19,Checking
+2025-03-10,Olive Garden,Restaurants,-13.38,Checking
+2025-04-14,Ikea,Shopping,-59.88,Checking
+2025-02-08,Costco,Groceries,-135.62,Checking
+2025-04-21,iCloud,Entertainment,-2.99,Checking
+2025-01-10,Chipotle,Restaurants,-14.14,Checking
+2025-04-04,Target,Shopping,-50.99,Checking
+2025-08-14,Lyft,Transportation,-10.36,Checking
+2025-08-26,AT&T,Utilities,-101.83,Checking
+2025-08-16,Chipotle,Restaurants,-13.4,Checking
+2025-02-23,Etsy,Shopping,-51.94,Checking
+2025-03-01,Chevron,Transportation,-36.8,Checking
+2025-08-13,Trader Joe's,Groceries,-66.78,Checking
+2025-06-06,Safeway,Groceries,-33.78,Checking
+2025-07-03,Exxon,Transportation,-70.31,Checking
+2025-03-17,Company Payroll,Salary,2152.57,Checking
+2025-03-30,Olive Garden,Restaurants,-24.37,Checking
+2025-04-26,Safeway,Groceries,-128.56,Checking
+2025-08-26,Safeway,Groceries,-134.01,Checking
+2025-07-02,Best Buy,Shopping,-31.02,Checking
+2024-12-31,Local Deli,Restaurants,-17.45,Checking
+2024-12-02,City Gym,Healthcare,-39.99,Checking
+2025-07-08,Chipotle,Restaurants,-23.41,Checking
+2024-10-31,McDonald's,Restaurants,-8.75,Checking
+2024-11-21,Safeway,Groceries,-104.08,Checking
+2025-01-01,Company Payroll,Salary,2639.62,Checking
+2025-01-16,Subway,Restaurants,-15.47,Checking
+2025-05-03,Local Deli,Restaurants,-15.35,Checking
+2025-02-27,Lyft,Transportation,-23.11,Checking
+2025-04-16,Olive Garden,Restaurants,-30.88,Checking
+2025-01-11,Starbucks,Restaurants,-12.98,Checking
+2025-02-27,Starbucks,Restaurants,-21.28,Checking
+2025-06-26,Starbucks,Restaurants,-15.42,Checking
+2025-01-10,Best Buy,Shopping,-279.65,Checking
+2024-10-20,Starbucks,Restaurants,-34.57,Checking
+2025-03-11,Walmart,Groceries,-97.08,Checking
+2024-09-14,Best Buy,Shopping,-80.08,Checking
+2025-05-28,Costco,Groceries,-89.51,Checking
+2025-08-13,Local Deli,Restaurants,-34.99,Checking
+2025-06-15,Subway,Restaurants,-22.15,Checking
+2025-04-10,Comcast,Utilities,-103.91,Checking
+2024-10-04,Starbucks,Restaurants,-18.33,Checking
+2025-03-09,Taco Truck,Restaurants,-26.0,Checking
+2025-08-26,Taco Truck,Restaurants,-11.75,Checking
+2025-02-21,iCloud,Entertainment,-2.99,Checking
+2025-08-31,Costco,Groceries,-90.23,Checking
+2025-03-06,Subway,Restaurants,-12.73,Checking
+2025-03-27,AT&T,Utilities,-69.45,Checking
+2025-01-09,Costco,Groceries,-88.92,Checking
+2025-01-15,Apple Cash,Misc,-84.2,Checking
+2025-01-25,Chipotle,Restaurants,-26.63,Checking
+2024-10-31,Starbucks,Restaurants,-34.56,Checking
+2025-04-18,Lyft,Transportation,-20.19,Checking
+2025-02-17,Spotify,Entertainment,-10.99,Checking
+2025-06-16,Company Payroll,Salary,2030.95,Checking
+2025-07-09,Subway,Restaurants,-20.13,Checking
+2025-07-01,Company Payroll,Salary,2396.28,Checking
+2025-01-20,Shell Gas,Transportation,-82.81,Checking
+2025-08-12,Starbucks,Restaurants,-21.74,Checking
+2025-01-22,Walgreens,Healthcare,-53.51,Checking
+2025-03-10,Olive Garden,Restaurants,-17.68,Checking
+2025-06-05,Netflix,Entertainment,-15.49,Checking
+2025-03-05,Landlord LLC,Rent,-1668.12,Checking
+2025-05-31,Starbucks,Restaurants,-23.33,Checking
+2025-07-14,Chipotle,Restaurants,-10.48,Checking
+2025-02-14,Taco Truck,Restaurants,-10.52,Checking
+2024-10-19,Starbucks,Restaurants,-13.13,Checking
+2025-06-21,Taco Truck,Restaurants,-10.03,Checking
+2024-11-15,Subway,Restaurants,-26.02,Checking
+2025-07-06,Walgreens,Healthcare,-105.0,Checking
+2025-08-17,Lyft,Transportation,-35.07,Checking
+2025-02-03,Property Mgmt Co,Rent,-1622.71,Checking
+2025-01-27,AT&T,Utilities,-101.65,Checking
+2025-03-05,Local Deli,Restaurants,-14.27,Checking
+2025-03-07,Apple Cash,Misc,-78.8,Checking
+2025-03-10,McDonald's,Restaurants,-34.8,Checking
+2025-06-10,Exxon,Transportation,-72.6,Checking
+2024-09-16,Local Deli,Restaurants,-11.53,Checking
+2025-02-02,Subway,Restaurants,-13.5,Checking
+2025-07-13,Chipotle,Restaurants,-21.55,Checking
+2025-08-29,Home Depot,Shopping,-102.68,Checking
+2025-07-14,Kaiser,Healthcare,-28.02,Checking
+2024-11-18,Ikea,Shopping,-26.59,Checking
+2024-10-05,Netflix,Entertainment,-15.49,Checking
+2024-09-06,McDonald's,Restaurants,-31.74,Checking
+2025-02-01,Subway,Restaurants,-34.27,Checking
+2024-10-07,CVS Pharmacy,Healthcare,-39.31,Checking
+2025-06-14,Comcast,Utilities,-93.24,Checking
+2025-02-16,McDonald's,Restaurants,-33.18,Checking
+2025-02-26,Lyft,Transportation,-34.26,Checking
+2024-09-05,PG&E,Utilities,-87.24,Checking
+2024-12-26,Trader Joe's,Groceries,-71.5,Checking
+2025-08-15,Company Payroll,Salary,2129.93,Checking
+2025-07-03,Starbucks,Restaurants,-18.12,Checking
+2024-12-30,Costco,Groceries,-39.68,Checking
+2025-05-22,Olive Garden,Restaurants,-26.32,Checking
+2024-10-21,Apple Cash,Misc,-71.2,Checking
+2025-04-18,Kaiser,Healthcare,-107.68,Checking
+2024-09-27,Local Deli,Restaurants,-22.64,Checking
+2025-07-13,Uber,Transportation,-16.12,Checking
+2025-02-25,AT&T,Utilities,-108.31,Checking
+2024-12-19,Amazon,Shopping,-79.0,Checking
+2024-12-21,iCloud,Entertainment,-2.99,Checking
+2025-06-29,Venmo,Misc,-93.13,Checking
+2024-11-01,Company Payroll,Salary,2101.08,Checking
+2025-02-06,Local Deli,Restaurants,-16.9,Checking
+2024-09-10,Chipotle,Restaurants,-21.66,Checking
+2025-01-09,Chipotle,Restaurants,-16.28,Checking
+2025-03-15,CVS Pharmacy,Healthcare,-88.37,Checking
+2025-03-31,Uber,Transportation,-25.83,Checking
+2025-06-10,CVS Pharmacy,Healthcare,-154.33,Checking
+2025-07-16,Chipotle,Restaurants,-26.79,Checking
+2025-03-30,Trader Joe's,Groceries,-58.05,Checking
+2025-01-31,Shell Gas,Transportation,-84.67,Checking
+2024-09-14,Starbucks,Restaurants,-33.08,Checking
+2025-08-06,Chevron,Transportation,-69.01,Checking
+2025-09-01,Company Payroll,Salary,1440.73,Checking
+2024-10-06,Uber,Transportation,-17.63,Checking
+2025-02-11,PayPal,Misc,-105.02,Checking
+2025-07-17,Spotify,Entertainment,-10.99,Checking
+2025-09-11,Comcast,Utilities,-85.31,Checking
+2025-01-24,Subway,Restaurants,-18.97,Checking
+2025-01-03,Etsy,Shopping,-54.94,Checking
+2024-11-01,PayPal,Misc,-113.42,Checking
+2024-11-14,Spotify,Entertainment,-10.99,Checking
+2025-02-17,Company Payroll,Salary,2467.61,Checking
+2025-01-14,Uber,Transportation,-33.3,Checking
+2024-09-15,Venmo,Misc,-108.38,Checking
+2025-07-05,McDonald's,Restaurants,-11.72,Checking
+2025-08-25,Uber,Transportation,-26.81,Checking
+2025-01-24,McDonald's,Restaurants,-22.86,Checking
+2025-01-03,PayPal,Misc,-11.86,Checking
+2025-01-13,Lyft,Transportation,-22.17,Checking
+2025-08-10,Taco Truck,Restaurants,-32.07,Checking
+2025-05-17,Olive Garden,Restaurants,-11.07,Checking
+2025-06-04,Landlord LLC,Rent,-1772.7,Checking
+2024-10-08,Trader Joe's,Groceries,-124.43,Checking
+2025-04-11,Best Buy,Shopping,-83.16,Checking
+2025-02-08,Best Buy,Shopping,-55.19,Checking
+2025-07-24,PayPal,Misc,-105.05,Checking
+2024-10-03,McDonald's,Restaurants,-34.11,Checking
+2025-06-02,Taco Truck,Restaurants,-20.14,Checking
+2025-04-02,Landlord LLC,Rent,-1764.96,Checking
+2025-07-12,Exxon,Transportation,-58.93,Checking
+2025-07-28,Starbucks,Restaurants,-11.37,Checking
+2025-08-03,Taco Truck,Restaurants,-29.88,Checking
+2025-09-23,iCloud,Entertainment,-2.99,Checking
+2024-12-31,Taco Truck,Restaurants,-25.6,Checking
+2025-03-31,Subway,Restaurants,-17.33,Checking
+2025-07-18,Local Deli,Restaurants,-33.23,Checking
+2024-11-03,Best Buy,Shopping,-35.79,Checking
+2025-08-15,Whole Foods,Groceries,-134.11,Checking
+2024-09-21,Uber,Transportation,-27.57,Checking
+2024-09-04,Property Mgmt Co,Rent,-1678.92,Checking
+2024-12-02,Property Mgmt Co,Rent,-2321.72,Checking
+2025-02-03,City Gym,Healthcare,-39.99,Checking
+2025-09-16,Spotify,Entertainment,-10.99,Checking
+2025-01-22,Safeway,Groceries,-68.58,Checking
+2024-09-05,Subway,Restaurants,-23.77,Checking
+2025-09-05,Netflix,Entertainment,-15.49,Checking
+2025-07-06,PayPal,Misc,-84.32,Checking
+2025-01-02,Local Deli,Restaurants,-22.94,Checking
+2025-03-22,Local Deli,Restaurants,-30.64,Checking
+2025-07-24,AT&T,Utilities,-93.4,Checking

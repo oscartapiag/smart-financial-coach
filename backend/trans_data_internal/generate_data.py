@@ -8,9 +8,9 @@ from collections import defaultdict
 # ----------------------------
 RANDOM_SEED = 42
 NUM_MONTHS_PAD = 7  # ~6 months window; we’ll compute from dates below
-END_DATE = datetime.today().date()
+END_DATE = datetime.today().date()s
 START_DATE = END_DATE - timedelta(days=365)  # ~6+ months
-OUT_PATH = Path("./trans_data_internal/sample_transactions_balanced.csv")
+OUT_PATH = Path("./trans_data_internal/sample_transactions_balanced_2.csv")
 
 random.seed(RANDOM_SEED)
 

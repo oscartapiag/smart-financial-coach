@@ -53,31 +53,43 @@
 /* Summary Cards */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  margin-left: -2rem;
+  margin-right: 1rem;
+  align-items: stretch;
 }
 
 .summary-card {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
+  background: white;
+  color: #1f2937;
   padding: 1.5rem;
   border-radius: 15px;
   text-align: center;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
 }
 
 .summary-title {
   font-size: 0.9rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
-  opacity: 0.9;
+  color: #4a5568;
+  text-align: center;
 }
 
 .summary-value {
   font-size: 2rem;
   font-weight: 700;
   margin: 0;
+  color: #1f2937;
+  text-align: center;
 }
 
 /* Subscriptions List */
@@ -312,6 +324,10 @@
   .summary-cards {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+  
+  .summary-card {
+    min-height: 100px;
   }
   
   .subscriptions-grid {

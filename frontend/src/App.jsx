@@ -165,6 +165,7 @@ function App() {
           Welcome: Ready to change your financial future?
         </h1>
         <p className="upload-text">Please upload your CSV file or drag and drop it here.</p>
+        <p className="demo-note">Files are processed in-memory for your safety, we do not store any of your data nor use it for any AI training purposes.</p>
         
         <div className="upload-section">
           <input

@@ -41,8 +41,16 @@
 .upload-text {
   font-size: 1.2rem;
   color: #4a5568;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   font-weight: 500;
+}
+
+.demo-note {
+  font-size: 0.9rem;
+  color: #718096;
+  margin-bottom: 2rem;
+  font-style: italic;
+  opacity: 0.8;
 }
 
 .upload-section {

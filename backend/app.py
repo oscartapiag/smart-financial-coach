@@ -29,6 +29,7 @@ from llm_insights import generate_llm_cards
 # Add wealth calculator to path
 sys.path.append(str(Path(__file__).parent))
 from wealth_calculator import WealthInputs, Assumptions, MonthlyFlows, simulate_future_wealth
+from savings_analyzer import SavingsAnalyzer, create_savings_analysis_response
 
 
 # Configure logging
@@ -1507,6 +1508,93 @@ async def calculate_optimized_wealth_projections(wealth_data: dict):
     except Exception as e:
         logger.error(f"Error calculating optimized wealth projections: {e}")
         raise HTTPException(status_code=500, detail=f"Error calculating optimized wealth projections: {str(e)}")
+
+@app.post("/savings/analyze")
+async def analyze_savings_goal(savings_request: dict):
+    """Analyze spending patterns and suggest savings strategies for a specific goal"""
+    try:
+        logger.info(f"Received savings analysis request: {savings_request}")
+        
+        file_id = savings_request.get("file_id")
+        target_amount = float(savings_request.get("target_amount", 0))
+        months = int(savings_request.get("months", 12))
+        
+        logger.info(f"Parsed parameters - file_id: {file_id}, target_amount: {target_amount}, months: {months}")
+        
+        if not file_id:
+            raise HTTPException(status_code=400, detail="file_id is required")
+        
+        if target_amount <= 0:
+            raise HTTPException(status_code=400, detail="target_amount must be positive")
+        
+        if months <= 0:
+            raise HTTPException(status_code=400, detail="months must be positive")
+        
+        # Get the CSV file
+        csv_file = UPLOAD_DIR / f"{file_id}.csv"
+        logger.info(f"Looking for CSV file: {csv_file}")
+        if not csv_file.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Read and process the CSV file
+        logger.info("Reading CSV file...")
+        df = pd.read_csv(csv_file)
+        logger.info(f"CSV file loaded with {len(df)} rows")
+        
+        logger.info("Categorizing transactions...")
+        df_with_ml = categorize_transactions(df.copy())
+        logger.info(f"Transactions categorized, new columns: {df_with_ml.columns.tolist()}")
+        
+        # Find amount and date columns
+        amount_col = None
+        date_col = None
+        
+        for col in df.columns:
+            if any(keyword in col.lower() for keyword in ['amount', 'debit', 'credit', 'value']):
+                amount_col = col
+            if any(keyword in col.lower() for keyword in ['date', 'time']):
+                date_col = col
+        
+        if not amount_col or not date_col:
+            raise HTTPException(status_code=400, detail="Could not find amount or date columns")
+        
+        # Initialize savings analyzer
+        analyzer = SavingsAnalyzer()
+        
+        # Perform savings analysis
+        analysis = analyzer.analyze_savings_goal(
+            df_with_ml, 
+            amount_col, 
+            date_col, 
+            target_amount, 
+            months
+        )
+        
+        # Convert to API response format
+        response_data = create_savings_analysis_response(analysis)
+        
+        # Add metadata
+        response_data["metadata"] = {
+            "file_id": file_id,
+            "analysis_date": pd.Timestamp.now().isoformat(),
+            "data_period": "Last 3 months",
+            "columns_used": {
+                "amount_column": amount_col,
+                "date_column": date_col
+            }
+        }
+        
+        return response_data
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 400, 404) without modification
+        raise
+    except ValueError as e:
+        logger.error(f"ValueError in savings analysis: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error analyzing savings goal: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error analyzing savings goal: {str(e)}")
 
 @app.get("/files/{file_id}/time-series")
 async def get_time_series_data(file_id: str, period: str = "30d"):

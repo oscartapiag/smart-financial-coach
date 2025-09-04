@@ -15,6 +15,7 @@ import {
 } from 'chart.js'
 import './AnalysisPage.css'
 import NetWorthCalculator from './NetWorthCalculator'
+import SavingsPlanner from './SavingsPlanner'
 
 // Register Chart.js components
 ChartJS.register(
@@ -46,6 +47,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
   const [aiInsightsRetryCount, setAiInsightsRetryCount] = useState(0)
   const [aiInsightsFetched, setAiInsightsFetched] = useState(false)
   const [showNetWorthCalculator, setShowNetWorthCalculator] = useState(false)
+  const [showSavingsPlanner, setShowSavingsPlanner] = useState(false)
 
   // Debug AI insights state changes
   useEffect(() => {
@@ -298,6 +300,14 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
 
   const handleBackFromNetWorthCalculator = () => {
     setShowNetWorthCalculator(false)
+  }
+
+  const handleNavigateToSavingsPlanner = () => {
+    setShowSavingsPlanner(true)
+  }
+
+  const handleBackFromSavingsPlanner = () => {
+    setShowSavingsPlanner(false)
   }
 
   const prepareChartData = () => {
@@ -797,6 +807,10 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
     return <NetWorthCalculator onBack={handleBackFromNetWorthCalculator} fileId={fileId} />
   }
 
+  if (showSavingsPlanner) {
+    return <SavingsPlanner onBack={handleBackFromSavingsPlanner} fileId={fileId} />
+  }
+
   return (
     <div className="analysis-page">
       <div className="analysis-container">
@@ -1073,6 +1087,17 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
                       <div className="tool-info">
                         <h4 className="tool-title">Net Worth Calculator</h4>
                         <p className="tool-description">Calculate your net worth and see how it will change over time and when your debts will be paid off!</p>
+                      </div>
+                    </button>
+                    
+                    <button 
+                      className="tool-button"
+                      onClick={handleNavigateToSavingsPlanner}
+                    >
+                      <div className="tool-icon">💰</div>
+                      <div className="tool-info">
+                        <h4 className="tool-title">Savings Planner</h4>
+                        <p className="tool-description">Set a savings goal and get personalized advice on how to achieve it!</p>
                       </div>
                     </button>
                     

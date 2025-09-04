@@ -32,7 +32,8 @@ def main():
         "test_subscriptions.py",
         "test_ai_insights.py",
         "test_wealth_projections.py",
-        "test_optimized_wealth.py"
+        "test_optimized_wealth.py",
+        "test_savings_analyzer.py"
     ]
     
     print("🧪 Financial Coach API - Complete Test Suite")

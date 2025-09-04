@@ -5,6 +5,16 @@ Test script for ML categorization functionality
 
 import requests
 import json
+import os
+
+# Configuration: Change this to switch between different CSV files
+CSV_FILES = {
+    "balanced": "./trans_data_internal/sample_transactions_balanced.csv",
+    "original": "./trans_data_internal/sample_transactions.csv"
+}
+
+# Set the default CSV file to use
+DEFAULT_CSV = "balanced"  # Change this to "original" to use the other file
 
 def test_ml_status():
     """Test the ML model status"""
@@ -80,17 +90,34 @@ def test_categorized_transactions(file_id):
     except requests.exceptions.ConnectionError:
         print("❌ Could not connect to server")
 
-def test_upload_for_ml():
+def test_upload_for_ml(csv_type=None):
     """Upload a file for ML testing"""
+    if csv_type is None:
+        csv_type = DEFAULT_CSV
+    
+    if csv_type not in CSV_FILES:
+        print(f"❌ Unknown CSV type: {csv_type}. Available: {list(CSV_FILES.keys())}")
+        return None
+    
+    csv_path = CSV_FILES[csv_type]
+    
+    # Check if file exists
+    if not os.path.exists(csv_path):
+        print(f"❌ CSV file not found: {csv_path}")
+        return None
+    
     url = "http://localhost:8000/upload-transactions"
     
-    with open("./trans_data_internal/sample_transactions.csv", "rb") as f:
-        files = {"file": ("./trans_data_internal/sample_transactions.csv", f, "text/csv")}
+    print(f"📁 Uploading CSV file for ML testing: {csv_path}")
+    
+    with open(csv_path, "rb") as f:
+        files = {"file": (csv_path, f, "text/csv")}
         
         try:
             response = requests.post(url, files=files)
             if response.status_code == 200:
                 data = response.json()
+                print(f"✅ Upload successful! File ID: {data['file_id']}")
                 return data['file_id']
             else:
                 print(f"❌ Upload failed: {response.status_code}")
@@ -101,6 +128,17 @@ def test_upload_for_ml():
 
 if __name__ == "__main__":
     print("🤖 Testing ML Categorization Functionality...")
+    print("=" * 50)
+    
+    # Show available CSV files
+    print(f"📁 Available CSV files:")
+    for name, path in CSV_FILES.items():
+        status = "✅" if os.path.exists(path) else "❌"
+        default_marker = " (DEFAULT)" if name == DEFAULT_CSV else ""
+        print(f"  {status} {name}: {path}{default_marker}")
+    
+    print(f"\n🎯 Using CSV file: {DEFAULT_CSV} ({CSV_FILES[DEFAULT_CSV]})")
+    print("💡 To change the CSV file, modify the DEFAULT_CSV variable at the top of this file")
     print("=" * 50)
     
     # Test ML status first

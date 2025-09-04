@@ -20,6 +20,7 @@ import sys
 # Add ML_models to path
 sys.path.append(str(Path(__file__).parent / "ML_models"))
 from categories_knn import knn_predict, load_model
+from find_subscriptions import load_model as load_subscription_model, predict_subscriptions
 
 
 # Configure logging
@@ -33,11 +34,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Initialize ML model on startup
+# Initialize ML models on startup
 @app.on_event("startup")
 async def startup_event():
-    """Initialize ML model when the application starts"""
+    """Initialize ML models when the application starts"""
     initialize_ml_model()
+    initialize_subscription_model()
 
 # Add CORS middleware
 app.add_middleware(
@@ -58,6 +60,12 @@ HASH_REGISTRY_FILE = UPLOAD_DIR / "file_hashes.json"
 # ML Model initialization
 ML_MODEL_LOADED = False
 ML_MODEL_PATH = Path(__file__).parent / "ML_models" / "knn_model.joblib"
+
+SUBSCRIPTION_MODEL_LOADED = False
+SUBSCRIPTION_MODEL_PATH = Path(__file__).parent / "ML_models" / "subscriptions_v1.joblib"
+SUBSCRIPTION_COLS_PATH = Path(__file__).parent / "ML_models" / "subscriptions_v1.cols.json"
+SUBSCRIPTION_MODEL = None
+SUBSCRIPTION_FEATURE_COLS = None
 
 # Expected financial transaction columns (flexible - will auto-detect)
 EXPECTED_FINANCIAL_COLUMNS = [
@@ -118,6 +126,24 @@ def initialize_ml_model():
     except Exception as e:
         logger.error(f"❌ Failed to load ML model: {e}")
         ML_MODEL_LOADED = False
+
+def initialize_subscription_model():
+    """Initialize the subscription detection model"""
+    global SUBSCRIPTION_MODEL_LOADED, SUBSCRIPTION_MODEL, SUBSCRIPTION_FEATURE_COLS
+    
+    try:
+        if SUBSCRIPTION_MODEL_PATH.exists() and SUBSCRIPTION_COLS_PATH.exists():
+            SUBSCRIPTION_MODEL, SUBSCRIPTION_FEATURE_COLS = load_subscription_model(
+                str(SUBSCRIPTION_MODEL_PATH), str(SUBSCRIPTION_COLS_PATH)
+            )
+            SUBSCRIPTION_MODEL_LOADED = True
+            logger.info("✅ Subscription model loaded successfully")
+        else:
+            logger.warning(f"⚠️ Subscription model files not found")
+            SUBSCRIPTION_MODEL_LOADED = False
+    except Exception as e:
+        logger.error(f"❌ Failed to load subscription model: {e}")
+        SUBSCRIPTION_MODEL_LOADED = False
 
 def predict_transaction_category(description: str, k: int = 5, threshold: float = 0.35) -> Tuple[str, float]:
     """
@@ -528,11 +554,18 @@ async def get_hash_registry():
 
 @app.get("/ml/status")
 async def get_ml_status():
-    """Get the status of the ML model"""
+    """Get the status of the ML models"""
     return {
-        "model_loaded": ML_MODEL_LOADED,
-        "model_path": str(ML_MODEL_PATH),
-        "model_exists": ML_MODEL_PATH.exists()
+        "category_model": {
+            "loaded": ML_MODEL_LOADED,
+            "path": str(ML_MODEL_PATH),
+            "exists": ML_MODEL_PATH.exists()
+        },
+        "subscription_model": {
+            "loaded": SUBSCRIPTION_MODEL_LOADED,
+            "path": str(SUBSCRIPTION_MODEL_PATH),
+            "exists": SUBSCRIPTION_MODEL_PATH.exists()
+        }
     }
 
 @app.post("/ml/predict-category")
@@ -580,6 +613,97 @@ async def get_categorized_transactions(file_id: str):
     except Exception as e:
         logger.error(f"Error categorizing transactions for file {file_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Error categorizing transactions: {str(e)}")
+
+@app.get("/files/{file_id}/subscriptions")
+async def get_subscriptions(file_id: str, threshold: float = 0.5):
+    """Get detected subscriptions from transaction data"""
+    csv_file = UPLOAD_DIR / f"{file_id}.csv"
+    if not csv_file.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    if not SUBSCRIPTION_MODEL_LOADED:
+        raise HTTPException(status_code=503, detail="Subscription model not loaded")
+    
+    try:
+        # Read and parse the CSV file
+        df = pd.read_csv(csv_file)
+        
+        # Find date and description columns
+        date_col = None
+        description_col = None
+        
+        for col in df.columns:
+            if any(keyword in col.lower() for keyword in ['date', 'time']):
+                date_col = col
+            if any(keyword in col.lower() for keyword in ['description', 'merchant', 'payee']):
+                description_col = col
+        
+        if not date_col or not description_col:
+            raise HTTPException(status_code=400, detail="Could not find date or description columns")
+        
+        # Prepare data for subscription detection
+        df_sub = df[[date_col, description_col]].copy()
+        df_sub.columns = ['date', 'description']
+        
+        # Add amount column if available
+        amount_col = None
+        for col in df.columns:
+            if any(keyword in col.lower() for keyword in ['amount', 'debit', 'credit', 'value']):
+                amount_col = col
+                break
+        
+        if amount_col:
+            df_sub['amount'] = pd.to_numeric(df[amount_col], errors='coerce')
+        else:
+            df_sub['amount'] = 0.0
+        
+        # Filter to only include expenses (negative amounts or zero)
+        # Income (positive amounts) should not be considered for subscription detection
+        df_sub = df_sub[df_sub['amount'] <= 0].copy()
+        
+        if len(df_sub) == 0:
+            raise HTTPException(status_code=400, detail="No expense transactions found for subscription analysis")
+        
+        # Detect subscriptions
+        subscriptions = predict_subscriptions(df_sub, SUBSCRIPTION_MODEL, SUBSCRIPTION_FEATURE_COLS)
+        
+        # Filter by threshold and convert to list
+        high_confidence_subscriptions = subscriptions[subscriptions['score'] >= threshold]
+        
+        subscription_list = []
+        for _, row in high_confidence_subscriptions.iterrows():
+            subscription_list.append({
+                "merchant": row['merchant'],
+                "subscription_score": float(row['score']),
+                "occurrences": int(row['n_occurrences']),
+                "coverage_months": int(row['coverage_months']),
+                "median_gap_days": float(row['median_gap_days']),
+                "day_consistency": float(row['dom_consistency']),
+                "average_amount": float(row['amount_mean']),
+                "autocorrelation_30d": float(row['autocorr_30d'])
+            })
+        
+        return {
+            "file_id": file_id,
+            "threshold": threshold,
+            "total_subscriptions": len(subscription_list),
+            "expense_transactions_analyzed": len(df_sub),
+            "subscriptions": subscription_list
+        }
+        
+    except Exception as e:
+        logger.error(f"Error detecting subscriptions for file {file_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error detecting subscriptions: {str(e)}")
+
+@app.get("/subscriptions/status")
+async def get_subscription_model_status():
+    """Get the status of the subscription detection model"""
+    return {
+        "model_loaded": SUBSCRIPTION_MODEL_LOADED,
+        "model_path": str(SUBSCRIPTION_MODEL_PATH),
+        "model_exists": SUBSCRIPTION_MODEL_PATH.exists(),
+        "feature_columns": SUBSCRIPTION_FEATURE_COLS
+    }
 
 @app.get("/files/{file_id}/time-series")
 async def get_time_series_data(file_id: str, period: str = "30d"):
@@ -713,6 +837,121 @@ async def get_time_series_data(file_id: str, period: str = "30d"):
     except Exception as e:
         logger.error(f"Error generating time series for file {file_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Error generating time series: {str(e)}")
+
+@app.get("/files/{file_id}/categories-by-time")
+async def get_categories_by_time(file_id: str, period: str = "30d"):
+    """Get spending categories analysis by time period"""
+    csv_file = UPLOAD_DIR / f"{file_id}.csv"
+    if not csv_file.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    if period not in ["14d", "30d", "90d", "1y"]:
+        raise HTTPException(status_code=400, detail="Period must be '14d', '30d', '90d', or '1y'")
+    
+    try:
+        # Read and parse the CSV file
+        df = pd.read_csv(csv_file)
+        
+        # Add ML categories
+        df_with_ml = categorize_transactions(df.copy())
+        
+        # Find amount and date columns
+        amount_col = None
+        date_col = None
+        
+        for col in df.columns:
+            if any(keyword in col.lower() for keyword in ['amount', 'debit', 'credit', 'value']):
+                amount_col = col
+            if any(keyword in col.lower() for keyword in ['date', 'time']):
+                date_col = col
+        
+        if not amount_col or not date_col:
+            raise HTTPException(status_code=400, detail="Could not find amount or date columns")
+        
+        # Process time series data
+        df_with_ml[date_col] = pd.to_datetime(df_with_ml[date_col], errors='coerce')
+        df_time_series = df_with_ml.dropna(subset=[date_col, amount_col]).copy()
+        
+        if len(df_time_series) == 0:
+            raise HTTPException(status_code=400, detail="No valid time series data found")
+        
+        # Convert amount to numeric
+        df_time_series[amount_col] = pd.to_numeric(
+            df_time_series[amount_col].astype(str).str.replace('$', '').str.replace(',', ''), 
+            errors='coerce'
+        )
+        
+        # Filter data based on time period
+        end_date = df_time_series[date_col].max()
+        
+        if period == "14d":
+            start_date = end_date - pd.Timedelta(days=13)
+        elif period == "30d":
+            start_date = end_date - pd.Timedelta(days=29)
+        elif period == "90d":
+            start_date = end_date - pd.Timedelta(days=89)
+        else:  # 1y
+            start_date = end_date - pd.Timedelta(days=364)
+        
+        # Filter data to the specified time period
+        df_filtered = df_time_series[df_time_series[date_col] >= start_date].copy()
+        
+        if len(df_filtered) == 0:
+            raise HTTPException(status_code=400, detail=f"No data found for the specified period: {period}")
+        
+        # Separate income and spending
+        income_data = df_filtered[df_filtered['ml_category'] == 'Income']
+        spending_data = df_filtered[df_filtered['ml_category'] != 'Income']
+        
+        # Analyze spending categories
+        category_analysis = {}
+        
+        if len(spending_data) > 0:
+            # Group by category and calculate statistics
+            category_groups = spending_data.groupby('ml_category')
+            
+            for category, group in category_groups:
+                category_amounts = group[amount_col]
+                category_analysis[category] = {
+                    "total_amount": float(abs(category_amounts.sum())),
+                    "transaction_count": len(group),
+                    "average_amount": float(abs(category_amounts.mean())),
+                    "min_amount": float(abs(category_amounts.min())),
+                    "max_amount": float(abs(category_amounts.max())),
+                    "percentage_of_spending": float(abs(category_amounts.sum()) / abs(spending_data[amount_col].sum()) * 100)
+                }
+        
+        # Sort categories by total amount
+        sorted_categories = sorted(category_analysis.items(), key=lambda x: x[1]['total_amount'], reverse=True)
+        
+        # Calculate summary statistics
+        total_income = float(income_data[amount_col].sum())
+        total_spending = float(spending_data[amount_col].sum())
+        
+        categories_data = {
+            "period": period,
+            "date_range": {
+                "start_date": start_date.strftime('%Y-%m-%d'),
+                "end_date": end_date.strftime('%Y-%m-%d'),
+                "days_covered": (end_date - start_date).days + 1
+            },
+            "summary": {
+                "total_income": total_income,
+                "total_spending": abs(total_spending),
+                "net_amount": total_income - abs(total_spending),
+                "income_transactions": len(income_data),
+                "spending_transactions": len(spending_data),
+                "unique_categories": len(category_analysis)
+            },
+            "top_categories": dict(sorted_categories[:10]),  # Top 10 categories
+            "all_categories": dict(sorted_categories)
+        }
+        
+        return categories_data
+        
+    except Exception as e:
+        logger.error(f"Error generating categories by time for file {file_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating categories by time: {str(e)}")
 
 @app.get("/files/{file_id}")
 async def get_file_details(file_id: str):

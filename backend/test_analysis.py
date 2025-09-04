@@ -5,18 +5,45 @@ Test script for financial analysis and time series functionality
 
 import requests
 import json
+import os
 
-def test_upload_for_analysis():
+# Configuration: Change this to switch between different CSV files
+CSV_FILES = {
+    "balanced": "./trans_data_internal/sample_transactions_balanced.csv",
+    "original": "./trans_data_internal/sample_transactions.csv"
+}
+
+# Set the default CSV file to use
+DEFAULT_CSV = "balanced"  # Change this to "original" to use the other file
+
+def test_upload_for_analysis(csv_type=None):
     """Upload a file for analysis testing"""
+    if csv_type is None:
+        csv_type = DEFAULT_CSV
+    
+    if csv_type not in CSV_FILES:
+        print(f"❌ Unknown CSV type: {csv_type}. Available: {list(CSV_FILES.keys())}")
+        return None
+    
+    csv_path = CSV_FILES[csv_type]
+    
+    # Check if file exists
+    if not os.path.exists(csv_path):
+        print(f"❌ CSV file not found: {csv_path}")
+        return None
+    
     url = "http://localhost:8000/upload-transactions"
     
-    with open("./trans_data_internal/sample_transactions.csv", "rb") as f:
-        files = {"file": ("./trans_data_internal/sample_transactions.csv", f, "text/csv")}
+    print(f"📁 Uploading CSV file: {csv_path}")
+    
+    with open(csv_path, "rb") as f:
+        files = {"file": (csv_path, f, "text/csv")}
         
         try:
             response = requests.post(url, files=files)
             if response.status_code == 200:
                 data = response.json()
+                print(f"✅ Upload successful! File ID: {data['file_id']}")
                 return data['file_id']
             else:
                 print(f"❌ Upload failed: {response.status_code}")
@@ -132,6 +159,44 @@ def test_time_series(file_id):
             print("❌ Could not connect to server")
             break
 
+def test_categories_by_time(file_id):
+    """Test categories by time period endpoint"""
+    if not file_id:
+        print("❌ No file ID provided for categories by time test")
+        return
+        
+    url = f"http://localhost:8000/files/{file_id}/categories-by-time"
+    
+    print(f"\n📊 Testing Categories by Time Period:")
+    for period in ["14d", "30d", "90d", "1y"]:
+        try:
+            response = requests.get(url, params={"period": period})
+            if response.status_code == 200:
+                data = response.json()
+                date_range = data['date_range']
+                summary = data['summary']
+                top_categories = data['top_categories']
+                
+                print(f"  {period.upper()}: {date_range['days_covered']} days")
+                print(f"    Date Range: {date_range['start_date']} to {date_range['end_date']}")
+                print(f"    Total Spending: ${summary['total_spending']:.2f}")
+                print(f"    Unique Categories: {summary['unique_categories']}")
+                print(f"    Spending Transactions: {summary['spending_transactions']}")
+                
+                # Show top 3 categories
+                if top_categories:
+                    print(f"    Top Categories:")
+                    for i, (category, info) in enumerate(list(top_categories.items())[:3], 1):
+                        print(f"      {i}. {category}: ${info['total_amount']:.2f} ({info['percentage_of_spending']:.1f}%)")
+                        print(f"         {info['transaction_count']} transactions, avg: ${info['average_amount']:.2f}")
+                
+                print()  # Add spacing
+            else:
+                print(f"  ❌ Failed to get {period} categories: {response.status_code}")
+        except requests.exceptions.ConnectionError:
+            print("❌ Could not connect to server")
+            break
+
 def test_file_details(file_id):
     """Test file details endpoint"""
     if not file_id:
@@ -157,6 +222,17 @@ if __name__ == "__main__":
     print("📊 Testing Financial Analysis & Time Series...")
     print("=" * 50)
     
+    # Show available CSV files
+    print(f"📁 Available CSV files:")
+    for name, path in CSV_FILES.items():
+        status = "✅" if os.path.exists(path) else "❌"
+        default_marker = " (DEFAULT)" if name == DEFAULT_CSV else ""
+        print(f"  {status} {name}: {path}{default_marker}")
+    
+    print(f"\n🎯 Using CSV file: {DEFAULT_CSV} ({CSV_FILES[DEFAULT_CSV]})")
+    print("💡 To change the CSV file, modify the DEFAULT_CSV variable at the top of this file")
+    print("=" * 50)
+    
     # Upload a file for analysis testing
     file_id = test_upload_for_analysis()
     
@@ -170,10 +246,14 @@ if __name__ == "__main__":
         # Test time series data
         test_time_series(file_id)
         
+        # Test categories by time
+        test_categories_by_time(file_id)
+        
         print(f"\n🔗 Analysis Endpoints:")
         print(f"📁 File details: http://localhost:8000/files/{file_id}")
         print(f"📊 File analysis: http://localhost:8000/files/{file_id}/analysis")
         print(f"📈 Time series data: http://localhost:8000/files/{file_id}/time-series")
+        print(f"📊 Categories by time: http://localhost:8000/files/{file_id}/categories-by-time")
         print(f"🤖 Categorized transactions: http://localhost:8000/files/{file_id}/categorized")
     else:
         print("❌ Could not upload file for analysis testing")

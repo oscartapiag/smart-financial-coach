@@ -41,10 +41,19 @@ def load_model():
     _nn = _pack["nn"]
     _y = _pack["y"]
 
+def normalize_category(category: str) -> str:
+    """
+    Normalize category names to treat 'Other' and 'Uncategorized' as the same.
+    """
+    if category in ["Other", "Uncategorized"]:
+        return "Uncategorized"
+    return category
+
 def knn_predict(desc: str, k: int = 3, threshold: float = 0.35) -> Tuple[str, float]:
     """
     Returns (label, confidence). Cosine distance -> similarity = 1 - dist.
     Confidence = avg similarity of neighbors belonging to the winning class.
+    Treats 'Other' and 'Uncategorized' as the same category.
     """
     if _vec is None or _nn is None or _y is None:
         load_model()
@@ -55,9 +64,12 @@ def knn_predict(desc: str, k: int = 3, threshold: float = 0.35) -> Tuple[str, fl
     sims = 1.0 - dists  # cosine similarity in [0..1]
     labels = _y[idxs]
 
+    # Normalize categories to treat 'Other' and 'Uncategorized' as the same
+    normalized_labels = [normalize_category(label) for label in labels]
+
     # Majority vote; tie-break by sum(similarities)
     buckets = {}
-    for lab, sim in zip(labels, sims):
+    for lab, sim in zip(normalized_labels, sims):
         buckets.setdefault(lab, []).append(sim)
 
     best_label = None

@@ -28,7 +28,8 @@ def main():
     test_files = [
         "test_upload.py",
         "test_categorizing_ML.py", 
-        "test_analysis.py"
+        "test_analysis.py",
+        "test_subscriptions.py"
     ]
     
     print("🧪 Financial Coach API - Complete Test Suite")

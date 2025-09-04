@@ -19,7 +19,6 @@ categories = [
     "P2P",
     "Fees",
     "Gas",
-    "Other",
 ]
 
 # Base merchant seeds per category
@@ -116,13 +115,6 @@ seeds = {
         "MOBIL", "SUNOCO", "76 STATION", "TEXACO", "GETTY",
         "ESSO", "GULF OIL", "HOLIDAY STATION", "EXXONMOBIL", "EXXON", "GAS BUDDY"
     ],
-    "Other": [
-        "MISC CHARGE", "GENERAL MERCHANT", "LOCAL MARKET", "STREET VENDOR", "COMMUNITY CENTER",
-        "DONATION", "POST OFFICE", "HARDWARE STORE", "HOME IMPROVEMENT", "LAUNDROMAT",
-        "PET STORE", "CAR WASH", "DRY CLEANING", "THRIFT STORE", "FARMERS MARKET",
-        "DOLLAR TREE", "DOLLAR GENERAL", "FAMILY DOLLAR", "BIG LOTS", "GOODWILL",
-        "SALVATION ARMY", "ACE HARDWARE", "TRUE VALUE", "HARBOR FREIGHT"
-    ],
 }
 
 
@@ -143,7 +135,7 @@ def synthesize(desc):
     return f"{pre}{desc}{suf}".strip()
 
 rows = []
-per_cat = 1000  # ~24 examples per category -> 24 * 15 = 360 rows
+per_cat = 10000  # ~24 examples per category -> 24 * 15 = 360 rows
 for cat in categories:
     options = seeds[cat]
     for _ in range(per_cat):

@@ -5,14 +5,40 @@ Test script for basic CSV upload functionality
 
 import requests
 import json
+import os
 
-def test_upload():
+# Configuration: Change this to switch between different CSV files
+CSV_FILES = {
+    "balanced": "./trans_data_internal/sample_transactions_balanced.csv",
+    "original": "./trans_data_internal/sample_transactions.csv"
+}
+
+# Set the default CSV file to use
+DEFAULT_CSV = "balanced"  # Change this to "original" to use the other file
+
+def test_upload(csv_type=None):
     """Test the CSV upload endpoint"""
+    if csv_type is None:
+        csv_type = DEFAULT_CSV
+    
+    if csv_type not in CSV_FILES:
+        print(f"❌ Unknown CSV type: {csv_type}. Available: {list(CSV_FILES.keys())}")
+        return None
+    
+    csv_path = CSV_FILES[csv_type]
+    
+    # Check if file exists
+    if not os.path.exists(csv_path):
+        print(f"❌ CSV file not found: {csv_path}")
+        return None
+    
     url = "http://localhost:8000/upload-transactions"
     
+    print(f"📁 Uploading CSV file: {csv_path}")
+    
     # Test with sample file
-    with open("./trans_data_internal/sample_transactions.csv", "rb") as f:
-        files = {"file": ("./trans_data_internal/sample_transactions.csv", f, "text/csv")}
+    with open(csv_path, "rb") as f:
+        files = {"file": (csv_path, f, "text/csv")}
         
         try:
             response = requests.post(url, files=files)
@@ -38,14 +64,28 @@ def test_upload():
             print("❌ Could not connect to server. Make sure it's running on http://localhost:8000")
             return None
 
-def test_duplicate_upload():
+def test_duplicate_upload(csv_type=None):
     """Test uploading the same file twice to verify duplicate detection"""
+    if csv_type is None:
+        csv_type = DEFAULT_CSV
+    
+    if csv_type not in CSV_FILES:
+        print(f"❌ Unknown CSV type: {csv_type}. Available: {list(CSV_FILES.keys())}")
+        return
+    
+    csv_path = CSV_FILES[csv_type]
+    
+    # Check if file exists
+    if not os.path.exists(csv_path):
+        print(f"❌ CSV file not found: {csv_path}")
+        return
+    
     print("\n🔄 Testing duplicate detection...")
     url = "http://localhost:8000/upload-transactions"
     
     # Upload the same file twice
-    with open("./trans_data_internal/sample_transactions.csv", "rb") as f:
-        files = {"file": ("./trans_data_internal/sample_transactions.csv", f, "text/csv")}
+    with open(csv_path, "rb") as f:
+        files = {"file": (csv_path, f, "text/csv")}
         
         try:
             response = requests.post(url, files=files)
@@ -93,6 +133,17 @@ def test_hash_registry():
 
 if __name__ == "__main__":
     print("🧪 Testing Basic Upload Functionality...")
+    print("=" * 50)
+    
+    # Show available CSV files
+    print(f"📁 Available CSV files:")
+    for name, path in CSV_FILES.items():
+        status = "✅" if os.path.exists(path) else "❌"
+        default_marker = " (DEFAULT)" if name == DEFAULT_CSV else ""
+        print(f"  {status} {name}: {path}{default_marker}")
+    
+    print(f"\n🎯 Using CSV file: {DEFAULT_CSV} ({CSV_FILES[DEFAULT_CSV]})")
+    print("💡 To change the CSV file, modify the DEFAULT_CSV variable at the top of this file")
     print("=" * 50)
     
     # Test upload

@@ -24,6 +24,14 @@ def normalize(t: str) -> str:
     t = re.sub(r"\s+", " ", t).strip()
     return t
 
+def normalize_category(category: str) -> str:
+    """
+    Normalize category names to treat 'Other' and 'Uncategorized' as the same.
+    """
+    if category in ["Other", "Uncategorized"]:
+        return "Uncategorized"
+    return category
+
 def main():
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Missing labeled data: {DATA_PATH}")
@@ -34,6 +42,9 @@ def main():
 
     df = df.dropna(subset=["description", "category"]).copy()
     df["description_norm"] = df["description"].map(normalize)
+    
+    # Normalize categories to treat 'Other' and 'Uncategorized' as the same
+    df["category_norm"] = df["category"].astype(str).map(normalize_category)
 
     vectorizer = TfidfVectorizer(
         ngram_range=(1, 2),
@@ -41,7 +52,7 @@ def main():
         max_features=30000,
     )
     X = vectorizer.fit_transform(df["description_norm"].values)
-    y = df["category"].astype(str).values
+    y = df["category_norm"].values
 
     # k-NN on cosine distance
     nn = NearestNeighbors(metric="cosine", n_neighbors=5)
@@ -49,6 +60,8 @@ def main():
 
     joblib.dump({"vectorizer": vectorizer, "nn": nn, "y": y}, MODEL_PATH)
     print(f"✅ Saved model to {MODEL_PATH}")
+    print(f"📊 Categories in model: {sorted(set(y))}")
+    print(f"📈 Total training samples: {len(y)}")
 
 if __name__ == "__main__":
     main()

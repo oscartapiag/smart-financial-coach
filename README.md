@@ -4,7 +4,7 @@ An AI-powered financial coach that transforms raw transaction data into **action
 
 Built for the Palo Alto Networks IT Hackathon 2025, Case Study.  
 
-> 🎥 **Demo Video (5–7 minutes):** [ADD YOUTUBE OR VIMEO LINK HERE]  
+> 🎥 **Demo Video (5–7 minutes):** [https://youtu.be/5SvmTr35uYE]  
 > 📄 **Design Doc:** See `/docs/design.md`  
 
 ---
@@ -93,7 +93,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app:app --reload --port 8000
+python run_server.py
 Also needs an API key for OpenAI
 
 ### Frontend Setup

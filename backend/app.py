@@ -22,6 +22,10 @@ sys.path.append(str(Path(__file__).parent / "ML_models"))
 from categories_knn import knn_predict, load_model
 from find_subscriptions import load_model as load_subscription_model, predict_subscriptions
 
+# Add LLM to path
+sys.path.append(str(Path(__file__).parent / "llm"))
+from llm_insights import generate_llm_cards
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -896,6 +900,175 @@ async def get_subscription_model_status():
         "model_exists": SUBSCRIPTION_MODEL_PATH.exists(),
         "feature_columns": SUBSCRIPTION_FEATURE_COLS
     }
+
+@app.get("/files/{file_id}/insights")
+async def get_ai_insights(file_id: str, period: str = "30d"):
+    """Get AI-powered financial insights for the uploaded data"""
+    csv_file = UPLOAD_DIR / f"{file_id}.csv"
+    if not csv_file.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    try:
+        # Read and parse the CSV file
+        df = pd.read_csv(csv_file)
+        
+        # Add ML categories
+        df_with_ml = categorize_transactions(df.copy())
+        
+        # Find amount and date columns
+        amount_col = None
+        date_col = None
+        
+        for col in df.columns:
+            if any(keyword in col.lower() for keyword in ['amount', 'debit', 'credit', 'value']):
+                amount_col = col
+            if any(keyword in col.lower() for keyword in ['date', 'time']):
+                date_col = col
+        
+        if not amount_col or not date_col:
+            raise HTTPException(status_code=400, detail="Could not find amount or date columns")
+        
+        # Process data for the specified period
+        df_with_ml[date_col] = pd.to_datetime(df_with_ml[date_col], errors='coerce')
+        df_time_series = df_with_ml.dropna(subset=[date_col, amount_col]).copy()
+        
+        if len(df_time_series) == 0:
+            raise HTTPException(status_code=400, detail="No valid time series data found")
+        
+        # Convert amount to numeric
+        df_time_series[amount_col] = pd.to_numeric(
+            df_time_series[amount_col].astype(str).str.replace('$', '').str.replace(',', ''), 
+            errors='coerce'
+        )
+        
+        # Filter data based on time period
+        end_date = df_time_series[date_col].max()
+        
+        if period == "14d":
+            start_date = end_date - pd.Timedelta(days=13)
+        elif period == "30d":
+            start_date = end_date - pd.Timedelta(days=29)
+        elif period == "90d":
+            start_date = end_date - pd.Timedelta(days=89)
+        else:  # 1y
+            start_date = end_date - pd.Timedelta(days=364)
+        
+        # Filter data to the specified time period
+        df_current = df_time_series[df_time_series[date_col] >= start_date].copy()
+        
+        # Get prior period for comparison
+        prior_start = start_date - (end_date - start_date)
+        df_prior = df_time_series[
+            (df_time_series[date_col] >= prior_start) & 
+            (df_time_series[date_col] < start_date)
+        ].copy()
+        
+        if len(df_current) == 0:
+            raise HTTPException(status_code=400, detail=f"No data found for the specified period: {period}")
+        
+        # Separate income and spending
+        income_current = df_current[df_current['ml_category'] == 'Income']
+        spending_current = df_current[df_current['ml_category'] != 'Income']
+        
+        income_prior = df_prior[df_prior['ml_category'] == 'Income']
+        spending_prior = df_prior[df_prior['ml_category'] != 'Income']
+        
+        # Calculate current period metrics
+        current_income = float(income_current[amount_col].sum())
+        current_expenses = float(abs(spending_current[amount_col].sum()))
+        current_net = current_income - current_expenses
+        
+        # Calculate prior period metrics
+        prior_income = float(income_prior[amount_col].sum())
+        prior_expenses = float(abs(spending_prior[amount_col].sum()))
+        prior_net = prior_income - prior_expenses
+        
+        # Calculate category deltas
+        current_categories = spending_current.groupby('ml_category')[amount_col].sum().abs()
+        prior_categories = spending_prior.groupby('ml_category')[amount_col].sum().abs()
+        
+        category_deltas = []
+        for category in current_categories.index:
+            current_amount = float(current_categories[category])
+            prior_amount = float(prior_categories.get(category, 0))
+            delta = current_amount - prior_amount
+            category_deltas.append({
+                "category": category,
+                "current_amount": current_amount,
+                "prior_amount": prior_amount,
+                "delta_amount": delta
+            })
+        
+        # Get top merchants
+        top_merchants = []
+        if 'description' in df_current.columns:
+            merchant_counts = df_current[df_current['ml_category'] != 'Income']['description'].value_counts().head(5)
+            for merchant, count in merchant_counts.items():
+                merchant_amount = float(df_current[df_current['description'] == merchant][amount_col].sum())
+                top_merchants.append({
+                    "merchant": merchant,
+                    "count": int(count),
+                    "total_amount": abs(merchant_amount)
+                })
+        
+        # Get subscription data
+        subscriptions = []
+        if SUBSCRIPTION_MODEL_LOADED:
+            try:
+                df_sub = df_current[[date_col, 'description']].copy()
+                df_sub.columns = ['date', 'description']
+                df_sub['amount'] = pd.to_numeric(df_current[amount_col], errors='coerce')
+                df_sub = df_sub[df_sub['amount'] <= 0].copy()
+                
+                if len(df_sub) > 0:
+                    subs_data = predict_subscriptions(df_sub, SUBSCRIPTION_MODEL, SUBSCRIPTION_FEATURE_COLS)
+                    high_confidence_subs = subs_data[subs_data['score'] >= 0.5]
+                    
+                    for _, row in high_confidence_subs.iterrows():
+                        subscriptions.append({
+                            "merchant": row['merchant'],
+                            "score": float(row['score']),
+                            "amount_mean": float(row['amount_mean']),
+                            "n_occurrences": int(row['n_occurrences'])
+                        })
+            except Exception as e:
+                logger.warning(f"Could not get subscription data: {e}")
+        
+        # Prepare inputs for LLM
+        llm_inputs = {
+            "time_range": f"Last {period}",
+            "income": current_income,
+            "expenses": current_expenses,
+            "net": current_net,
+            "prior_net": prior_net,
+            "category_deltas": category_deltas,
+            "top_merchants": top_merchants,
+            "subscriptions": subscriptions,
+            "cash_balance": None  # Could be added if available
+        }
+        
+        # Generate AI insights
+        try:
+            insights = generate_llm_cards(llm_inputs)
+            return {
+                "file_id": file_id,
+                "period": period,
+                "insights": insights,
+                "summary": {
+                    "current_income": current_income,
+                    "current_expenses": current_expenses,
+                    "current_net": current_net,
+                    "prior_net": prior_net,
+                    "net_change": current_net - prior_net
+                }
+            }
+        except Exception as e:
+            logger.error(f"Error generating AI insights: {e}")
+            raise HTTPException(status_code=500, detail=f"Error generating AI insights: {str(e)}")
+        
+    except Exception as e:
+        logger.error(f"Error generating insights for file {file_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating insights: {str(e)}")
 
 @app.get("/files/{file_id}/time-series")
 async def get_time_series_data(file_id: str, period: str = "30d"):

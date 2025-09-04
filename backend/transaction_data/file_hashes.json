@@ -1,32 +1,12 @@
 {
-  "d61c869550faac10aedb101f416bb67adda6db60aa1dc857c0d23989c52036a6": {
-    "file_id": "4b1aaf27-d249-41a1-b0df-faf7b60dbba9",
-    "filename": "sample_transaction_2.csv",
-    "upload_time": "2025-09-03T12:00:23.640770"
+  "738eaa5a8f1c7f8425725e7f33db6ed621cc4fbb5f7f36dfe3d2f9d13244ad8a": {
+    "file_id": "e1223e9b-7d47-4e26-98c0-6150c58a2b95",
+    "filename": "sample_transactions_balanced.csv",
+    "upload_time": "2025-09-03T20:33:19.618636"
   },
   "9e1788a526175a3248ab4543278eab59121d0ffbd08c804c8579903342541deb": {
-    "file_id": "4d8997de-9b6b-407c-a98f-e4df29fba52a",
+    "file_id": "840a8de0-fd39-4ae8-977a-190c7fd936b5",
     "filename": "Chase8851_Activity_20250903.csv",
-    "upload_time": "2025-09-03T12:01:25.226273"
-  },
-  "d74b5232304b648a3503ddafe6c3828d0e8a27602721407b60b9215a9e43ba18": {
-    "file_id": "826ce1f0-d2e8-49a9-a7ab-cb28fa060303",
-    "filename": "sample_transactions.csv",
-    "upload_time": "2025-09-03T12:36:13.847570"
-  },
-  "90df5f4c31167c1868f5f7c5698928da3344dccde27380ace78cf2b0d5b78e15": {
-    "file_id": "0076c80b-ff97-4144-99ac-5813eacaad65",
-    "filename": "sample_transactions_realistic.csv",
-    "upload_time": "2025-09-03T15:04:29.227624"
-  },
-  "8d1817fa8ef5275400d6871d272cbb6b7edd65558a0acdffde02d272952e4cfd": {
-    "file_id": "86883523-98c1-403a-90b9-5d84980aed50",
-    "filename": "sample_transactions_balanced.csv",
-    "upload_time": "2025-09-03T15:16:53.375913"
-  },
-  "738eaa5a8f1c7f8425725e7f33db6ed621cc4fbb5f7f36dfe3d2f9d13244ad8a": {
-    "file_id": "c181ddb0-ee4f-4367-8256-7243444b61e2",
-    "filename": "sample_transactions_balanced.csv",
-    "upload_time": "2025-09-03T15:30:32.363994"
+    "upload_time": "2025-09-03T23:08:41.700934"
   }
 }

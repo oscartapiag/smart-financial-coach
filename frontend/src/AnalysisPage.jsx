@@ -39,6 +39,21 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
   const [chartType, setChartType] = useState('bar') // 'bar' or 'pie'
   const [excludeRent, setExcludeRent] = useState(false)
   const [error, setError] = useState(null)
+  const [aiInsights, setAiInsights] = useState(null)
+  const [aiInsightsLoading, setAiInsightsLoading] = useState(false)
+  const [aiInsightsError, setAiInsightsError] = useState(false)
+  const [aiInsightsRetryCount, setAiInsightsRetryCount] = useState(0)
+  const [aiInsightsFetched, setAiInsightsFetched] = useState(false)
+
+  // Debug AI insights state changes
+  useEffect(() => {
+    console.log('AI insights state changed:', { 
+      aiInsights: !!aiInsights, 
+      aiInsightsLoading, 
+      aiInsightsError, 
+      aiInsightsFetched 
+    })
+  }, [aiInsights, aiInsightsLoading, aiInsightsError, aiInsightsFetched])
 
   useEffect(() => {
     // Check if we already have data - if so, skip loading animation
@@ -67,7 +82,7 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
           const analysisData = await analysisResponse.json()
           setAnalysisData(analysisData)
           
-          // Then fetch default 30-day time series and category data
+          // Then fetch default 30-day time series and category data (AI insights loaded separately)
           const timeSeriesUrl = `http://localhost:8000/files/${fileId}/time-series?period=30d`
           const categoryUrl = `http://localhost:8000/files/${fileId}/categories-by-time?period=30d`
           
@@ -113,6 +128,37 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
     }
   }, [fileId, analysisData, timeSeriesData, categoryData])
 
+  // Separate useEffect to fetch AI insights after page loads (only once)
+  useEffect(() => {
+    console.log('AI insights useEffect triggered:', { 
+      analysisData: !!analysisData, 
+      timeSeriesData: !!timeSeriesData, 
+      categoryData: !!categoryData, 
+      loading, 
+      selectedPeriod, 
+      aiInsightsFetched 
+    })
+    
+    if (analysisData && timeSeriesData && categoryData && !loading && !aiInsightsFetched) {
+      // Page has loaded, wait a bit then fetch AI insights in background
+      console.log('Page loaded, will fetch AI insights in background after delay...')
+      
+      // Add a delay to ensure page is fully rendered
+      const delayTimer = setTimeout(() => {
+        try {
+          console.log('Starting AI insights fetch after delay...')
+          setAiInsightsFetched(true) // Mark as fetched to prevent re-triggering
+          fetchAiInsights(selectedPeriod)
+        } catch (error) {
+          console.error('Error in fetchAiInsights:', error)
+          setAiInsightsError(true)
+        }
+      }, 2000) // 2 second delay
+      
+      return () => clearTimeout(delayTimer)
+    }
+  }, [analysisData, timeSeriesData, categoryData, loading, aiInsightsFetched])
+
   const fetchTimeSeriesData = async (period) => {
     try {
       const url = `http://localhost:8000/files/${fileId}/time-series?period=${period}`
@@ -157,11 +203,93 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
     }
   }
 
+  const fetchAiInsights = async (period, retryCount = 0) => {
+    console.log('=== FETCH AI INSIGHTS CALLED ===')
+    console.log('Parameters:', { period, retryCount, aiInsightsLoading, fileId })
+    
+    // Prevent multiple simultaneous calls
+    if (aiInsightsLoading) {
+      console.log('AI insights already loading, skipping duplicate call')
+      return
+    }
+    
+    try {
+      console.log('Setting AI insights loading to true...')
+      setAiInsightsLoading(true)
+      setAiInsightsError(false)
+      const url = `http://localhost:8000/files/${fileId}/insights?period=${period}`
+      console.log(`Fetching AI insights for period: ${period} (attempt ${retryCount + 1})`)
+      console.log(`URL: ${url}`)
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        console.log('AI insights request timeout, aborting...')
+        controller.abort()
+      }, 60000) // 60 second timeout
+      
+      console.log('Making fetch request...')
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      clearTimeout(timeoutId)
+      console.log('Response received:', { status: response.status, ok: response.ok })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log(`AI insights received for ${period}:`, data)
+        
+        // Validate the response structure
+        if (data && data.insights && data.insights.cards && Array.isArray(data.insights.cards)) {
+          console.log('AI insights cards received:', data.insights.cards)
+          console.log('Setting AI insights state...')
+          setAiInsights(data.insights.cards)
+          setAiInsightsRetryCount(0) // Reset retry count on success
+          console.log('AI insights state set successfully!')
+        } else {
+          console.error('Invalid AI insights response structure:', data)
+          setAiInsightsError(true)
+        }
+      } else {
+        console.error(`Failed to fetch AI insights for ${period}:`, response.status, response.statusText)
+        setAiInsightsError(true)
+      }
+    } catch (err) {
+      console.error('Error in fetchAiInsights:', err)
+      if (err.name === 'AbortError') {
+        console.error('AI insights request timed out after 30 seconds')
+      } else {
+        console.error('AI insights fetch error:', err)
+      }
+      
+      // Retry logic - only retry once
+      if (retryCount < 1) {
+        console.log(`Retrying AI insights fetch in 5 seconds... (attempt ${retryCount + 2})`)
+        setTimeout(() => {
+          fetchAiInsights(period, retryCount + 1)
+        }, 5000)
+        return
+      }
+      
+      setAiInsightsError(true)
+    } finally {
+      console.log('Setting AI insights loading to false...')
+      setAiInsightsLoading(false)
+      console.log('=== FETCH AI INSIGHTS COMPLETED ===')
+    }
+  }
+
   const handlePeriodSelect = (period) => {
     console.log(`Period changed from ${selectedPeriod} to ${period}`)
     setSelectedPeriod(period)
+    setAiInsightsFetched(false) // Reset fetch flag for new period
     fetchTimeSeriesData(period)
     fetchCategoryData(period)
+    // AI insights will be fetched by the useEffect after a delay
   }
 
   const prepareChartData = () => {
@@ -329,6 +457,40 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
       ],
     }
   }
+
+  // AI Insights calculation functions
+  const getLargestTransaction = () => {
+    try {
+      if (!timeSeriesData?.spending) return null
+      let largest = { amount: 0, date: '', description: 'Largest spending day' }
+      
+      timeSeriesData.spending.forEach(day => {
+        if (day.daily_amount && Math.abs(day.daily_amount) > largest.amount) {
+          largest = {
+            amount: Math.abs(day.daily_amount),
+            date: day.date,
+            description: 'Largest spending day'
+          }
+        }
+      })
+      
+      return largest.amount > 0 ? largest : null
+    } catch (error) {
+      console.error('Error in getLargestTransaction:', error)
+      return null
+    }
+  }
+
+  const getBarsSpending = () => {
+    try {
+      if (!categoryData?.top_categories) return 0
+      return categoryData.top_categories['Bars']?.total_amount || 0
+    } catch (error) {
+      console.error('Error in getBarsSpending:', error)
+      return 0
+    }
+  }
+
 
   const lineChartOptions = {
     responsive: true,
@@ -583,7 +745,45 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
     )
   }
 
-  const chartData = prepareChartData()
+  // Safety check to prevent rendering if critical data is missing
+  if (!analysisData || !timeSeriesData || !categoryData) {
+    console.error('Missing critical data:', { analysisData: !!analysisData, timeSeriesData: !!timeSeriesData, categoryData: !!categoryData })
+    return (
+      <div className="analysis-page">
+        <div className="error-container">
+          <div className="error-content">
+            <div className="error-icon">⚠️</div>
+            <h2 className="error-title">Data Loading Issue</h2>
+            <p className="error-message">Some data is still loading. Please wait or refresh the page.</p>
+            <button className="back-button" onClick={() => window.location.reload()}>
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  let chartData
+  try {
+    chartData = prepareChartData()
+  } catch (error) {
+    console.error('Error preparing chart data:', error)
+    return (
+      <div className="analysis-page">
+        <div className="error-container">
+          <div className="error-content">
+            <div className="error-icon">❌</div>
+            <h2 className="error-title">Chart Error</h2>
+            <p className="error-message">There was an error preparing the chart data. Please refresh the page.</p>
+            <button className="back-button" onClick={() => window.location.reload()}>
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="analysis-page">
@@ -603,27 +803,63 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
                 <div className="ai-insights-section">
                   <h3 className="section-title">AI Insights</h3>
                   <div className="insights-content">
-                    <div className="insight-card">
-                      <h4 className="insight-title">💡 Spending Pattern Analysis</h4>
-                      <p className="insight-text">
-                        Your spending shows a healthy balance between necessities and discretionary expenses. 
-                        Consider setting up automatic savings to build your emergency fund.
-                      </p>
-                    </div>
-                    <div className="insight-card">
-                      <h4 className="insight-title">📊 Category Optimization</h4>
-                      <p className="insight-text">
-                        Your top spending categories suggest opportunities for budget optimization. 
-                        Track these areas closely to maximize savings potential.
-                      </p>
-                    </div>
-                    <div className="insight-card">
-                      <h4 className="insight-title">🎯 Financial Goals</h4>
-                      <p className="insight-text">
-                        Based on your income and spending patterns, you could potentially save 
-                        more by reducing discretionary expenses by 15-20%.
-                      </p>
-                    </div>
+                    {aiInsightsLoading ? (
+                      <div className="insight-card loading">
+                        <h4 className="insight-title">🤖 AI Insights Loading...</h4>
+                        <p className="insight-text">
+                          Our AI is analyzing your financial data to provide personalized insights. 
+                          This may take a few moments...
+                        </p>
+                        <div className="loading-spinner-small"></div>
+                      </div>
+                    ) : aiInsights && !aiInsightsError ? (
+                      // Show AI-generated insights
+                      aiInsights.map((insight, index) => (
+                        <div key={index} className="insight-card">
+                          <h4 className="insight-title">🤖 {insight.title}</h4>
+                          <p className="insight-text">{insight.summary}</p>
+                          {insight.cta && (
+                            <div className="insight-cta">
+                              <strong>{insight.cta.label}:</strong> {insight.cta.action}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      // Fallback to default insights
+                      <>
+                        {!aiInsightsError && (
+                          <div className="insight-card">
+                            <h4 className="insight-title">🤖 AI Insights Coming Soon</h4>
+                            <p className="insight-text">
+                              Our AI is analyzing your data in the background to provide personalized insights. 
+                              Here are some quick insights while you wait...
+                            </p>
+                          </div>
+                        )}
+                        
+                        {getLargestTransaction() && (
+                          <div className="insight-card">
+                            <h4 className="insight-title">💰 Largest Transaction</h4>
+                            <p className="insight-text">
+                              Your largest spending day was <strong>${getLargestTransaction().amount.toFixed(2)}</strong> on {getLargestTransaction().date}. 
+                              Consider reviewing such high-expense days for potential savings opportunities.
+                            </p>
+                          </div>
+                        )}
+                        
+                        {getBarsSpending() > 0 && (
+                          <div className="insight-card">
+                            <h4 className="insight-title">🍺 Bars Spending</h4>
+                            <p className="insight-text">
+                              You've spent <strong>${getBarsSpending().toFixed(2)}</strong> on bars this month. 
+                              Remember: moderation in alcohol consumption benefits both your wallet and your health. 
+                              Consider setting a monthly entertainment budget to maintain balance.
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

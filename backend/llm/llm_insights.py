@@ -5,6 +5,8 @@ import openai
 from openai import OpenAI
 from jsonschema import validate, ValidationError
 from llm_schema import INSIGHT_CARD_SCHEMA
+from dotenv import load_dotenv
+import os
 
 SYSTEM = (
   "You are a concise personal finance analyst. "
@@ -32,7 +34,8 @@ Return 3–6 insights. Use exactly this JSON schema:
 Do not include any non-JSON text. Do not wrap in markdown fences.
 """
 
-_client = OpenAI()
+load_dotenv()
+_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def _summarize(inputs: Dict[str, Any]) -> Dict[str, Any]:
     cat = sorted(inputs.get("category_deltas", []), key=lambda x: -abs(x.get("delta_amount",0)))[:6]

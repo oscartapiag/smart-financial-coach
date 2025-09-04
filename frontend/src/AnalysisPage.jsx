@@ -1103,12 +1103,12 @@ function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
                     
                     <button 
                       className="tool-button"
-                      onClick={() => alert('Credit Card Debt Strategies - Coming Soon!')}
+                      onClick={() => window.open('https://www.creditkarma.com/calculators/credit-cards/debt-repayment', '_blank')}
                     >
                       <div className="tool-icon">💳</div>
                       <div className="tool-info">
-                        <h4 className="tool-title">Credit Card Debt Strategies</h4>
-                        <p className="tool-description">Get personalized strategies to pay off credit card debt faster.</p>
+                        <h4 className="tool-title">Credit Card Debt Calculator</h4>
+                        <p className="tool-description">Calculate how long it will take to pay off your credit card debt with Credit Karma's calculator.</p>
                       </div>
                     </button>
                   </div>

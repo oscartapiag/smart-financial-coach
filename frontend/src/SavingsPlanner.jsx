@@ -3,7 +3,7 @@ import './SavingsPlanner.css'
 
 function SavingsPlanner({ onBack, fileId }) {
   const [targetAmount, setTargetAmount] = useState('')
-  const [months, setMonths] = useState('12')
+  const [months, setMonths] = useState('')
   const [analysis, setAnalysis] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -96,20 +96,20 @@ function SavingsPlanner({ onBack, fileId }) {
                 <label htmlFor="months" className="input-label">
                   Time Period (Months)
                 </label>
-                <select
+                <input
                   id="months"
+                  type="number"
                   value={months}
                   onChange={(e) => setMonths(e.target.value)}
+                  placeholder="e.g., 12"
                   className="input-field"
-                >
-                  <option value="3">3 Months</option>
-                  <option value="6">6 Months</option>
-                  <option value="12">1 Year</option>
-                  <option value="18">18 Months</option>
-                  <option value="24">2 Years</option>
-                  <option value="36">3 Years</option>
-                  <option value="60">5 Years</option>
-                </select>
+                  min="1"
+                  max="120"
+                  step="1"
+                />
+                <div className="input-hint">
+                  Enter any number of months (1-120)
+                </div>
               </div>
 
               {error && (
@@ -136,7 +136,7 @@ function SavingsPlanner({ onBack, fileId }) {
                 onClick={() => {
                   setAnalysis(null)
                   setTargetAmount('')
-                  setMonths('12')
+                  setMonths('')
                   setError(null)
                 }}
               >

@@ -122,6 +122,7 @@ def test_subscription_detection(file_id, threshold=0.5):
             print(f"📊 Threshold: {data['threshold']}")
             print(f"💸 Expense Transactions Analyzed: {data.get('expense_transactions_analyzed', 'N/A')}")
             print(f"📈 Total Subscriptions Found: {data['total_subscriptions']}")
+            print(f"💰 Total Monthly Cost: ${data.get('total_monthly_cost', 0):.2f}")
             
             if data['subscriptions']:
                 print(f"\n📋 Detected Subscriptions:")
@@ -131,8 +132,13 @@ def test_subscription_detection(file_id, threshold=0.5):
                     print(f"     Occurrences: {sub['occurrences']}")
                     print(f"     Coverage: {sub['coverage_months']} months")
                     print(f"     Avg Amount: ${sub['average_amount']:.2f}")
+                    print(f"     Monthly Cost: ${sub.get('average_monthly_cost', 0):.2f}")
                     print(f"     Day Consistency: {sub['day_consistency']:.2f}")
                     print(f"     Median Gap: {sub['median_gap_days']:.1f} days")
+                    if sub.get('website'):
+                        print(f"     Website: {sub['website']}")
+                    else:
+                        print(f"     Website: Not found")
                     print()
             else:
                 print("ℹ️  No subscriptions detected above the threshold")
@@ -158,7 +164,8 @@ def test_different_thresholds(file_id):
             response = requests.get(url, params={"threshold": threshold})
             if response.status_code == 200:
                 data = response.json()
-                print(f"  Threshold {threshold}: {data['total_subscriptions']} subscriptions")
+                total_cost = data.get('total_monthly_cost', 0)
+                print(f"  Threshold {threshold}: {data['total_subscriptions']} subscriptions (${total_cost:.2f}/month)")
             else:
                 print(f"  Threshold {threshold}: Failed ({response.status_code})")
         except requests.exceptions.ConnectionError:

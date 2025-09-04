@@ -29,7 +29,7 @@ ChartJS.register(
   ArcElement
 )
 
-function AnalysisPage({ fileId, onBack }) {
+function AnalysisPage({ fileId, onBack, onNavigateToSubscriptions }) {
   const [loading, setLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [analysisData, setAnalysisData] = useState(null)
@@ -41,16 +41,22 @@ function AnalysisPage({ fileId, onBack }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Simulate 5-second loading with progress bar
+    // Check if we already have data - if so, skip loading animation
+    if (analysisData && timeSeriesData && categoryData) {
+      setLoading(false)
+      return
+    }
+
+    // Simulate 1-second loading with progress bar
     const loadingInterval = setInterval(() => {
       setLoadingProgress(prev => {
         if (prev >= 100) {
           clearInterval(loadingInterval)
           return 100
         }
-        return prev + 2 // Increment by 2% every 100ms for 5 seconds
+        return prev + 10 // Increment by 10% every 100ms for 1 second
       })
-    }, 40)
+    }, 100)
 
     // Fetch analysis data and default time series data after loading completes
     const fetchInitialData = async () => {
@@ -98,14 +104,14 @@ function AnalysisPage({ fileId, onBack }) {
       }
     }
 
-    // Start fetching data after 5 seconds
-    const fetchTimer = setTimeout(fetchInitialData, 3000)
+    // Start fetching data after 1 second
+    const fetchTimer = setTimeout(fetchInitialData, 1000)
 
     return () => {
       clearInterval(loadingInterval)
       clearTimeout(fetchTimer)
     }
-  }, [fileId])
+  }, [fileId, analysisData, timeSeriesData, categoryData])
 
   const fetchTimeSeriesData = async (period) => {
     try {
@@ -432,10 +438,10 @@ function AnalysisPage({ fileId, onBack }) {
     },
     layout: {
       padding: {
-        top: 10,
-        bottom: 10,
-        left: 10,
-        right: 10
+        top: 5,
+        bottom: 5,
+        left: 5,
+        right: 5
       }
     },
     scales: {
@@ -591,6 +597,39 @@ function AnalysisPage({ fileId, onBack }) {
 
         {analysisData && (
           <div className="analysis-content">
+            <div className="three-column-layout">
+              {/* Left Column - AI Insights */}
+              <div className="left-column">
+                <div className="ai-insights-section">
+                  <h3 className="section-title">AI Insights</h3>
+                  <div className="insights-content">
+                    <div className="insight-card">
+                      <h4 className="insight-title">💡 Spending Pattern Analysis</h4>
+                      <p className="insight-text">
+                        Your spending shows a healthy balance between necessities and discretionary expenses. 
+                        Consider setting up automatic savings to build your emergency fund.
+                      </p>
+                    </div>
+                    <div className="insight-card">
+                      <h4 className="insight-title">📊 Category Optimization</h4>
+                      <p className="insight-text">
+                        Your top spending categories suggest opportunities for budget optimization. 
+                        Track these areas closely to maximize savings potential.
+                      </p>
+                    </div>
+                    <div className="insight-card">
+                      <h4 className="insight-title">🎯 Financial Goals</h4>
+                      <p className="insight-text">
+                        Based on your income and spending patterns, you could potentially save 
+                        more by reducing discretionary expenses by 15-20%.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Center Column - Main Data */}
+              <div className="center-column">
             {/* Time Period Selection */}
             <div className="time-period-section">
               <h3 className="section-title">Select Time Period To View Spending/Income</h3>
@@ -641,62 +680,6 @@ function AnalysisPage({ fileId, onBack }) {
                     )}
                   </div>
                   
-                  {/* Time Series Summary */}
-                  {timeSeriesData?.summary && (
-                    <div className="time-series-summary">
-                      <div className="summary-item">
-                        <span className="summary-label">Total Income:</span>
-                        <span className="summary-value income">${timeSeriesData.summary.total_income.toFixed(2)}</span>
-                      </div>
-                      <div className="summary-item">
-                        <span className="summary-label">Total Spending:</span>
-                        <span className="summary-value spending">${timeSeriesData.summary.total_spending.toFixed(2)}</span>
-                      </div>
-                      <div className="summary-item">
-                        <span className="summary-label">Net Amount:</span>
-                        <span className={`summary-value ${timeSeriesData.summary.net_amount >= 0 ? 'positive' : 'negative'}`}>
-                          ${timeSeriesData.summary.net_amount.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Detailed Time Series Information */}
-                  {timeSeriesData && (
-                    <div className="detailed-summary">
-                      <h4 className="detailed-title">Period Details</h4>
-                      <div className="detailed-grid">
-                        <div className="detailed-item">
-                          <span className="detailed-label">Period:</span>
-                          <span className="detailed-value">{selectedPeriod === '14d' ? '14 Days' : 
-                                                           selectedPeriod === '30d' ? '30 Days' : 
-                                                           selectedPeriod === '90d' ? '90 Days' : '1 Year'}</span>
-                        </div>
-                        <div className="detailed-item">
-                          <span className="detailed-label">Date Range:</span>
-                          <span className="detailed-value">
-                            {timeSeriesData.date_range?.start_date} to {timeSeriesData.date_range?.end_date}
-                          </span>
-                        </div>
-                        <div className="detailed-item">
-                          <span className="detailed-label">Days Covered:</span>
-                          <span className="detailed-value">{timeSeriesData.date_range?.days_covered} days</span>
-                        </div>
-                        <div className="detailed-item">
-                          <span className="detailed-label">Data Points:</span>
-                          <span className="detailed-value">{timeSeriesData.summary?.data_points} points</span>
-                        </div>
-                        <div className="detailed-item">
-                          <span className="detailed-label">Income Transactions:</span>
-                          <span className="detailed-value">{timeSeriesData.summary?.income_transactions}</span>
-                        </div>
-                        <div className="detailed-item">
-                          <span className="detailed-label">Spending Transactions:</span>
-                          <span className="detailed-value">{timeSeriesData.summary?.spending_transactions}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -760,7 +743,105 @@ function AnalysisPage({ fileId, onBack }) {
               </div>
             )}
 
+            {/* Time Series Summary */}
+            {timeSeriesData?.summary && (
+              <div className="time-series-summary">
+                <div className="summary-item">
+                  <span className="summary-label">Total Income:</span>
+                  <span className="summary-value income">${timeSeriesData.summary.total_income.toFixed(2)}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">Total Spending:</span>
+                  <span className="summary-value spending">${timeSeriesData.summary.total_spending.toFixed(2)}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">Net Amount:</span>
+                  <span className={`summary-value ${timeSeriesData.summary.net_amount >= 0 ? 'positive' : 'negative'}`}>
+                    ${timeSeriesData.summary.net_amount.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
 
+            {/* Detailed Time Series Information */}
+            {timeSeriesData && (
+              <div className="detailed-summary">
+                <h4 className="detailed-title">Period Details</h4>
+                <div className="detailed-grid">
+                  <div className="detailed-item">
+                    <span className="detailed-label">Period:</span>
+                    <span className="detailed-value">{selectedPeriod === '14d' ? '14 Days' : 
+                                                     selectedPeriod === '30d' ? '30 Days' : 
+                                                     selectedPeriod === '90d' ? '90 Days' : '1 Year'}</span>
+                  </div>
+                  <div className="detailed-item">
+                    <span className="detailed-label">Date Range:</span>
+                    <span className="detailed-value">
+                      {timeSeriesData.date_range?.start_date} to {timeSeriesData.date_range?.end_date}
+                    </span>
+                  </div>
+                  <div className="detailed-item">
+                    <span className="detailed-label">Days Covered:</span>
+                    <span className="detailed-value">{timeSeriesData.date_range?.days_covered} days</span>
+                  </div>
+                  <div className="detailed-item">
+                    <span className="detailed-label">Data Points:</span>
+                    <span className="detailed-value">{timeSeriesData.summary?.data_points} points</span>
+                  </div>
+                  <div className="detailed-item">
+                    <span className="detailed-label">Income Transactions:</span>
+                    <span className="detailed-value">{timeSeriesData.summary?.income_transactions}</span>
+                  </div>
+                  <div className="detailed-item">
+                    <span className="detailed-label">Spending Transactions:</span>
+                    <span className="detailed-value">{timeSeriesData.summary?.spending_transactions}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+              </div>
+
+              {/* Right Column - Tools */}
+              <div className="right-column">
+                <div className="tools-section">
+                  <h3 className="section-title">Financial Tools</h3>
+                  <div className="tools-content">
+                    <button 
+                      className="tool-button"
+                      onClick={onNavigateToSubscriptions}
+                    >
+                      <div className="tool-icon">📱</div>
+                      <div className="tool-info">
+                        <h4 className="tool-title">Subscriptions</h4>
+                        <p className="tool-description">View and manage your current subscriptions.</p>
+                      </div>
+                    </button>
+                    
+                    <button 
+                      className="tool-button"
+                      onClick={() => alert('Credit Card Debt Strategies - Coming Soon!')}
+                    >
+                      <div className="tool-icon">💳</div>
+                      <div className="tool-info">
+                        <h4 className="tool-title">Credit Card Debt Strategies</h4>
+                        <p className="tool-description">Get personalized strategies to pay off credit card debt faster.</p>
+                      </div>
+                    </button>
+                    
+                    <button 
+                      className="tool-button"
+                      onClick={() => alert('Wealth Predictor - Coming Soon!')}
+                    >
+                      <div className="tool-icon">📈</div>
+                      <div className="tool-info">
+                        <h4 className="tool-title">Wealth Predictor</h4>
+                        <p className="tool-description">Project your future wealth based on current spending patterns.</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

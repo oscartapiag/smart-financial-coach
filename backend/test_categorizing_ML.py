@@ -17,18 +17,30 @@ CSV_FILES = {
 DEFAULT_CSV = "balanced"  # Change this to "original" to use the other file
 
 def test_ml_status():
-    """Test the ML model status"""
+    """Test the ML models status"""
     url = "http://localhost:8000/ml/status"
     
     try:
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            print(f"\n🤖 ML Model Status:")
-            print(f"✅ Model Loaded: {data['model_loaded']}")
-            print(f"📁 Model Path: {data['model_path']}")
-            print(f"📄 Model Exists: {data['model_exists']}")
-            return data['model_loaded']
+            print(f"\n🤖 ML Models Status:")
+            
+            # Category model status
+            cat_model = data['category_model']
+            print(f"📊 Category Model:")
+            print(f"  ✅ Loaded: {cat_model['loaded']}")
+            print(f"  📁 Path: {cat_model['path']}")
+            print(f"  📄 Exists: {cat_model['exists']}")
+            
+            # Subscription model status
+            sub_model = data['subscription_model']
+            print(f"🔍 Subscription Model:")
+            print(f"  ✅ Loaded: {sub_model['loaded']}")
+            print(f"  📁 Path: {sub_model['path']}")
+            print(f"  📄 Exists: {sub_model['exists']}")
+            
+            return cat_model['loaded'] and sub_model['loaded']
         else:
             print(f"❌ ML status check failed: {response.status_code}")
             return False
@@ -142,10 +154,10 @@ if __name__ == "__main__":
     print("=" * 50)
     
     # Test ML status first
-    model_loaded = test_ml_status()
+    models_loaded = test_ml_status()
     
-    if not model_loaded:
-        print("⚠️  ML model not loaded, some tests may fail")
+    if not models_loaded:
+        print("⚠️  Some ML models not loaded, some tests may fail")
     
     # Test single predictions
     test_single_prediction()
@@ -158,7 +170,9 @@ if __name__ == "__main__":
         test_categorized_transactions(file_id)
     
     print(f"\n🔗 ML Endpoints:")
-    print(f"🤖 ML status: http://localhost:8000/ml/status")
-    print(f"🔮 Single prediction: http://localhost:8000/ml/predict-category")
+    print(f"🤖 ML models status: http://localhost:8000/ml/status")
+    print(f"🔮 Single category prediction: http://localhost:8000/ml/predict-category")
+    print(f"🔍 Subscription model status: http://localhost:8000/subscriptions/status")
     if file_id:
         print(f"📊 Categorized transactions: http://localhost:8000/files/{file_id}/categorized")
+        print(f"📊 File subscriptions: http://localhost:8000/files/{file_id}/subscriptions")

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import AnalysisPage from './AnalysisPage'
+import SubscriptionsPage from './SubscriptionsPage'
 import './App.css'
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
   const [uploadedFileId, setUploadedFileId] = useState(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [currentPage, setCurrentPage] = useState('analysis') // 'analysis' or 'subscriptions'
   const fileInputRef = useRef(null)
 
   // Trigger fade-in animation on component mount
@@ -19,6 +21,21 @@ function App() {
     }, 100)
     return () => clearTimeout(timer)
   }, [])
+
+  // Handle URL-based navigation
+  useEffect(() => {
+    const path = window.location.pathname
+    if (path.includes('/subscriptions/')) {
+      const fileId = path.split('/subscriptions/')[1]
+      if (fileId && fileId !== uploadedFileId) {
+        setUploadedFileId(fileId)
+      }
+      setCurrentPage('subscriptions')
+      setShowAnalysis(true)
+    } else {
+      setCurrentPage('analysis')
+    }
+  }, [uploadedFileId])
 
   const uploadFileToAPI = async (file) => {
     setIsUploading(true)
@@ -110,11 +127,29 @@ function App() {
     setUploadStatus(null)
     setUploadMessage('')
     setUploadedFileId(null)
+    setCurrentPage('analysis')
+  }
+
+  const handleNavigateToSubscriptions = () => {
+    setCurrentPage('subscriptions')
+    window.history.pushState({}, '', `/subscriptions/${uploadedFileId}`)
+  }
+
+  const handleBackToAnalysis = () => {
+    setCurrentPage('analysis')
+    window.history.pushState({}, '', '/')
   }
 
   // Show analysis page if file was uploaded successfully
   if (showAnalysis && uploadedFileId) {
-    return <AnalysisPage fileId={uploadedFileId} onBack={handleBackToUpload} />
+    if (currentPage === 'subscriptions') {
+      return <SubscriptionsPage fileId={uploadedFileId} onBack={handleBackToAnalysis} />
+    }
+    return <AnalysisPage 
+      fileId={uploadedFileId} 
+      onBack={handleBackToUpload}
+      onNavigateToSubscriptions={handleNavigateToSubscriptions}
+    />
   }
 
   return (

@@ -67,6 +67,83 @@ SUBSCRIPTION_COLS_PATH = Path(__file__).parent / "ML_models" / "subscriptions_v1
 SUBSCRIPTION_MODEL = None
 SUBSCRIPTION_FEATURE_COLS = None
 
+# Subscription merchant to website mapping
+SUBSCRIPTION_WEBSITES = {
+    # Streaming Services
+    "NETFLIX": "https://netflix.com",
+    "SPOTIFY": "https://spotify.com",
+    "AMAZON PRIME": "https://amazon.com/prime",
+    "DISNEY": "https://disneyplus.com",
+    "HULU": "https://hulu.com",
+    "APPLE MUSIC": "https://music.apple.com",
+    "YOUTUBE PREMIUM": "https://youtube.com/premium",
+    "HBO MAX": "https://hbomax.com",
+    "PARAMOUNT": "https://paramountplus.com",
+    "PEACOCK": "https://peacocktv.com",
+    
+    # Software & Productivity
+    "ADOBE": "https://adobe.com",
+    "MICROSOFT 365": "https://microsoft.com/microsoft-365",
+    "GOOGLE DRIVE": "https://drive.google.com",
+    "DROPBOX": "https://dropbox.com",
+    "NOTION": "https://notion.so",
+    "SLACK": "https://slack.com",
+    "ZOOM": "https://zoom.us",
+    "CANVA": "https://canva.com",
+    "FIGMA": "https://figma.com",
+    
+    # Gaming
+    "XBOX": "https://xbox.com",
+    "PLAYSTATION": "https://playstation.com",
+    "STEAM": "https://store.steampowered.com",
+    "NINTENDO": "https://nintendo.com",
+    "EPIC GAMES": "https://epicgames.com",
+    
+    # Fitness & Health
+    "PELOTON": "https://onepeloton.com",
+    "CLASSPASS": "https://classpass.com",
+    "MYFITNESSPAL": "https://myfitnesspal.com",
+    "HEADSPACE": "https://headspace.com",
+    "CALM": "https://calm.com",
+    
+    # Food & Delivery
+    "UBER EATS": "https://ubereats.com",
+    "DOORDASH": "https://doordash.com",
+    "GRUBHUB": "https://grubhub.com",
+    "INSTACART": "https://instacart.com",
+    "HELLOFRESH": "https://hellofresh.com",
+    "BLUE APRON": "https://blueapron.com",
+    
+    # Cloud & Hosting
+    "AWS": "https://aws.amazon.com",
+    "GOOGLE CLOUD": "https://cloud.google.com",
+    "DIGITALOCEAN": "https://digitalocean.com",
+    "HEROKU": "https://heroku.com",
+    "NETLIFY": "https://netlify.com",
+    
+    # News & Media
+    "NEW YORK TIMES": "https://nytimes.com",
+    "WALL STREET JOURNAL": "https://wsj.com",
+    "THE ATLANTIC": "https://theatlantic.com",
+    "MEDIUM": "https://medium.com",
+    "SUBSTACK": "https://substack.com",
+    
+    # Other Services
+    "ICLOUD": "https://icloud.com",
+    "ONEDRIVE": "https://onedrive.live.com",
+    "LASTPASS": "https://lastpass.com",
+    "1PASSWORD": "https://1password.com",
+    "GRAMMARLY": "https://grammarly.com",
+    "LINKEDIN": "https://linkedin.com/premium",
+    "CRUNCHYROLL": "https://crunchyroll.com",
+    "PATREON": "https://patreon.com",
+    "ONLYFANS": "https://onlyfans.com",
+    "TWITCH": "https://twitch.tv",
+    "DISCORD": "https://discord.com",
+    "TELEGRAM": "https://telegram.org",
+    "SIGNAL": "https://signal.org"
+}
+
 # Expected financial transaction columns (flexible - will auto-detect)
 EXPECTED_FINANCIAL_COLUMNS = [
     'date', 'description', 'amount', 'category', 'account', 'type',
@@ -144,6 +221,100 @@ def initialize_subscription_model():
     except Exception as e:
         logger.error(f"❌ Failed to load subscription model: {e}")
         SUBSCRIPTION_MODEL_LOADED = False
+
+def find_subscription_website(merchant_name: str) -> Optional[str]:
+    """
+    Find the website URL for a subscription merchant name.
+    Uses fuzzy matching to handle variations in merchant names.
+    """
+    if not merchant_name:
+        return None
+    
+    # Normalize the merchant name for comparison
+    normalized_name = merchant_name.upper().strip()
+    
+    # Direct match first
+    if normalized_name in SUBSCRIPTION_WEBSITES:
+        return SUBSCRIPTION_WEBSITES[normalized_name]
+    
+    # Fuzzy matching for common variations
+    for known_merchant, website in SUBSCRIPTION_WEBSITES.items():
+        # Check if the merchant name contains any of the known keywords
+        if any(keyword in normalized_name for keyword in known_merchant.split()):
+            return website
+        
+        # Check if any keyword from the merchant name matches known merchants
+        merchant_words = normalized_name.split()
+        for word in merchant_words:
+            if word in known_merchant:
+                return website
+    
+    # Special cases for common variations
+    variations = {
+        "NETFLIX": ["NETFLIX", "NETFLIX.COM"],
+        "SPOTIFY": ["SPOTIFY", "SPOTIFY.COM"],
+        "AMAZON": ["AMAZON", "AMAZON.COM", "AMAZON PRIME", "PRIME"],
+        "DISNEY": ["DISNEY", "DISNEY+", "DISNEY PLUS"],
+        "APPLE": ["APPLE", "APPLE MUSIC", "APPLE.COM"],
+        "GOOGLE": ["GOOGLE", "GOOGLE DRIVE", "GOOGLE.COM"],
+        "MICROSOFT": ["MICROSOFT", "MSFT", "OFFICE 365", "MICROSOFT 365"],
+        "ADOBE": ["ADOBE", "ADOBE.COM"],
+        "XBOX": ["XBOX", "XBOX LIVE"],
+        "PLAYSTATION": ["PLAYSTATION", "PSN", "PLAYSTATION NETWORK"],
+        "STEAM": ["STEAM", "STEAM.COM"],
+        "UBER": ["UBER", "UBER EATS"],
+        "DOORDASH": ["DOORDASH", "DOOR DASH"],
+        "GRUBHUB": ["GRUBHUB", "GRUB HUB"],
+        "INSTACART": ["INSTACART", "INSTA CART"],
+        "HELLOFRESH": ["HELLOFRESH", "HELLO FRESH"],
+        "BLUEAPRON": ["BLUEAPRON", "BLUE APRON"],
+        "PELOTON": ["PELOTON", "PELOTON.COM"],
+        "CLASSPASS": ["CLASSPASS", "CLASS PASS"],
+        "MYFITNESSPAL": ["MYFITNESSPAL", "MY FITNESS PAL"],
+        "HEADSPACE": ["HEADSPACE", "HEAD SPACE"],
+        "NEW YORK TIMES": ["NYTIMES", "NEW YORK TIMES", "NY TIMES"],
+        "WALL STREET JOURNAL": ["WSJ", "WALL STREET JOURNAL"],
+        "THE ATLANTIC": ["ATLANTIC", "THE ATLANTIC"],
+        "SUBSTACK": ["SUBSTACK", "SUB STACK"],
+        "ONLYFANS": ["ONLYFANS", "ONLY FANS"],
+        "CRUNCHYROLL": ["CRUNCHYROLL", "CRUNCHY ROLL"],
+        "PATREON": ["PATREON", "PATREON.COM"],
+        "TWITCH": ["TWITCH", "TWITCH.TV"],
+        "DISCORD": ["DISCORD", "DISCORD.COM"],
+        "TELEGRAM": ["TELEGRAM", "TELEGRAM.ORG"],
+        "SIGNAL": ["SIGNAL", "SIGNAL.ORG"],
+        "GRAMMARLY": ["GRAMMARLY", "GRAMMARLY.COM"],
+        "LINKEDIN": ["LINKEDIN", "LINKEDIN.COM"],
+        "LASTPASS": ["LASTPASS", "LAST PASS"],
+        "1PASSWORD": ["1PASSWORD", "1 PASSWORD"],
+        "ICLOUD": ["ICLOUD", "I CLOUD"],
+        "ONEDRIVE": ["ONEDRIVE", "ONE DRIVE"],
+        "AWS": ["AWS", "AMAZON WEB SERVICES"],
+        "GOOGLE CLOUD": ["GOOGLE CLOUD", "GCP"],
+        "DIGITALOCEAN": ["DIGITALOCEAN", "DIGITAL OCEAN"],
+        "HEROKU": ["HEROKU", "HEROKU.COM"],
+        "NETLIFY": ["NETLIFY", "NETLIFY.COM"],
+        "DROPBOX": ["DROPBOX", "DROPBOX.COM"],
+        "NOTION": ["NOTION", "NOTION.SO"],
+        "SLACK": ["SLACK", "SLACK.COM"],
+        "ZOOM": ["ZOOM", "ZOOM.US"],
+        "CANVA": ["CANVA", "CANVA.COM"],
+        "FIGMA": ["FIGMA", "FIGMA.COM"],
+        "EPIC GAMES": ["EPIC", "EPIC GAMES"],
+        "NINTENDO": ["NINTENDO", "NINTENDO.COM"],
+        "HULU": ["HULU", "HULU.COM"],
+        "HBO MAX": ["HBO", "HBO MAX", "MAX"],
+        "PARAMOUNT": ["PARAMOUNT", "PARAMOUNT PLUS"],
+        "PEACOCK": ["PEACOCK", "PEACOCK TV"],
+        "YOUTUBE": ["YOUTUBE", "YOUTUBE PREMIUM"],
+        "MEDIUM": ["MEDIUM", "MEDIUM.COM"]
+    }
+    
+    for known_merchant, variation_list in variations.items():
+        if any(variation in normalized_name for variation in variation_list):
+            return SUBSCRIPTION_WEBSITES.get(known_merchant)
+    
+    return None
 
 def predict_transaction_category(description: str, k: int = 5, threshold: float = 0.35) -> Tuple[str, float]:
     """
@@ -569,7 +740,7 @@ async def get_ml_status():
     }
 
 @app.post("/ml/predict-category")
-async def predict_single_category(description: str, k: int = 5, threshold: float = 0.35):
+async def predict_single_category(description: str, k: int = 7, threshold: float = 0.25):
     """Predict spending category for a single transaction description (for spending transactions only)"""
     if not ML_MODEL_LOADED:
         raise HTTPException(status_code=503, detail="ML model not loaded")
@@ -672,6 +843,21 @@ async def get_subscriptions(file_id: str, threshold: float = 0.5):
         
         subscription_list = []
         for _, row in high_confidence_subscriptions.iterrows():
+            # Calculate average monthly cost
+            # If we have coverage months, use that; otherwise estimate from median gap
+            if row['coverage_months'] > 0:
+                avg_monthly_cost = abs(float(row['amount_mean'])) * (row['n_occurrences'] / row['coverage_months'])
+            else:
+                # Estimate based on median gap (assume monthly if gap is around 30 days)
+                if row['median_gap_days'] > 0:
+                    estimated_frequency_per_month = 30.0 / row['median_gap_days']
+                    avg_monthly_cost = abs(float(row['amount_mean'])) * estimated_frequency_per_month
+                else:
+                    avg_monthly_cost = abs(float(row['amount_mean']))
+            
+            # Find the website for this merchant
+            website = find_subscription_website(row['merchant'])
+            
             subscription_list.append({
                 "merchant": row['merchant'],
                 "subscription_score": float(row['score']),
@@ -680,13 +866,19 @@ async def get_subscriptions(file_id: str, threshold: float = 0.5):
                 "median_gap_days": float(row['median_gap_days']),
                 "day_consistency": float(row['dom_consistency']),
                 "average_amount": float(row['amount_mean']),
-                "autocorrelation_30d": float(row['autocorr_30d'])
+                "average_monthly_cost": round(avg_monthly_cost, 2),
+                "autocorrelation_30d": float(row['autocorr_30d']),
+                "website": website
             })
+        
+        # Calculate total monthly cost
+        total_monthly_cost = sum(sub['average_monthly_cost'] for sub in subscription_list)
         
         return {
             "file_id": file_id,
             "threshold": threshold,
             "total_subscriptions": len(subscription_list),
+            "total_monthly_cost": round(total_monthly_cost, 2),
             "expense_transactions_analyzed": len(df_sub),
             "subscriptions": subscription_list
         }
